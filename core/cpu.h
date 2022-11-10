@@ -3,7 +3,7 @@
 #include "defs.h"
 
 namespace ps1 {
-    typedef uint32_t register_t;
+    typedef uint32_t cpu_reg_t;
 
     // 32-bit MIPS R3000A processor.
     class cpu_t {
@@ -11,7 +11,7 @@ namespace ps1 {
         cpu_t();
 
     private:
-        register_t regs[32]; // general purpose registers
-        register_t pc; // program counter
+        cpu_reg_t regs[32]; // general purpose registers
+        cpu_reg_t pc; // program counter
     };
 }

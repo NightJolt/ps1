@@ -1,8 +1,8 @@
 #include "cpu.h"
 
 namespace ps1 {
-    constexpr register_t register_garbage_value = 0xDEADBEEF; // magic value for debugging
-    constexpr register_t bios_main_func_addr = 0xBFC00000; // BIOS main function address
+    constexpr cpu_reg_t register_garbage_value = 0xDEADBEEF; // magic value for debugging
+    constexpr cpu_reg_t bios_main_func_addr = 0xBFC00000; // BIOS main function address
 }
 
 
