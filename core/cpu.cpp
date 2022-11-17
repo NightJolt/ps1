@@ -6,6 +6,12 @@ namespace ps1 {
     constexpr cpu_reg_t bios_main_func_addr = 0xBFC00000; // BIOS main function address
 }
 
+ps1::cpu_instr_t::cpu_instr_t(uint32_t value) : raw(value) {}
+
+ps1::cpu_instr_t::operator uint32_t() {
+    return raw;
+}
+
 ps1::cpu_t::cpu_t(bus_t* bus) : bus(bus) {
     for (int i = 0; i < 32; i++) {
         regs[i] = register_garbage_value; // initialize registers to garbage value
@@ -28,5 +34,5 @@ void ps1::cpu_t::tick() {
 }
 
 void ps1::cpu_t::execute(cpu_instr_t instr) {
-    printf("EXECUTING 0x%08X: 0x%08X\n", pc, instr); // print instruction
+    printf("EXECUTING 0x%08X: 0x%08X\n", pc, (uint32_t)instr); // print instruction
 }

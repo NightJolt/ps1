@@ -11,5 +11,7 @@ uint32_t ps1::bus_t::fetch32(mem_addr_t mem_addr) const {
         }
     }
 
+    ASSERT(false, "Unmapped memory address");
+
     return 0;
 }

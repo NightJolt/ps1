@@ -36,8 +36,9 @@ using pair_t = std::pair <T1, T2>;
 
 namespace ps1 {
     typedef uint32_t cpu_reg_t;
-    typedef uint32_t cpu_instr_t;
     typedef uint32_t mem_addr_t;
+
+    union cpu_instr_t;
 
     struct bus_t;
     struct cpu_t;

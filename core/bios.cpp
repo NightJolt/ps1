@@ -15,7 +15,7 @@ ps1::bios_t::bios_t(const str_t& path) {
 }
 
 uint32_t ps1::bios_t::fetch32(mem_addr_t offset) const {
-    ASSERT(offset < 0 || offset + sizeof cpu_instr_t <= data.size(), "BIOS offset is out of bounds");
+    ASSERT(offset < 0 || offset + sizeof(uint32_t) <= data.size(), "BIOS offset is out of bounds");
 
     // uint32_t data32 = 0;
 
@@ -25,5 +25,5 @@ uint32_t ps1::bios_t::fetch32(mem_addr_t offset) const {
 
     // return data32;
 
-    return *(cpu_instr_t*)(data.data() + offset); // ! probably faster but not portable
+    return *(uint32_t*)(data.data() + offset); // ! probably faster but not portable
 }
