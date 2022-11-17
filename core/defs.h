@@ -5,7 +5,9 @@
 #include <vector>
 #include <optional>
 
-#include <iostream>
+#if defined(PS1_DEBUG)
+    #include <iostream>
+#endif
 
 #if defined(PS1_DEBUG)
     #define ASSERT(condition, message)\
@@ -28,8 +30,16 @@ using dyn_arr_t = std::vector <T>;
 template <class T>
 using optional_t = std::optional <T>;
 
+template <class T1, class T2>
+using pair_t = std::pair <T1, T2>;
+
 
 namespace ps1 {
+    typedef uint32_t cpu_reg_t;
     typedef uint32_t cpu_instr_t;
     typedef uint32_t mem_addr_t;
+
+    struct bus_t;
+    struct cpu_t;
+    struct bios_t;
 }
