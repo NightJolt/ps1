@@ -7,7 +7,9 @@ ps1::mem_addr_t ps1::mem_range_t::offset(mem_addr_t mem_addr) const {
 }
 
 bool ps1::mem_range_t::contains(mem_addr_t mem_addr) const {
-    return offset(mem_addr) < size;
+    auto o = offset(mem_addr);
+
+    return o < size && o >= 0;
 }
 
 ps1::peripheral_i::~peripheral_i() noexcept = default;
