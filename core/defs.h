@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+// #include <cstdio>
 
 #if defined(PS1_DEBUG)
     #include <iostream>
@@ -19,6 +20,13 @@
                 } while (false)
 #else
     #define ASSERT(condition, message) do { } while (false)
+#endif
+
+#if defined(PS1_DEBUG)
+    #define DEBUG_CODE(code)\
+                code;
+#else
+    #define DEBUG_CODE(code) do { } while (false)
 #endif
 
 

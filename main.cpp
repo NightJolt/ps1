@@ -9,7 +9,9 @@ int main() {
 
     bus.add_device(&bios, { 0xBFC00000, 0x80000 });
     
-    cpu.tick();
+    while (true) {
+        cpu.tick();
+    }
     
     return 0;
 }

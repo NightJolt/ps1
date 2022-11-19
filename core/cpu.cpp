@@ -13,7 +13,7 @@ ps1::cpu_instr_t::operator uint32_t() {
 }
 
 ps1::cpu_t::cpu_t(bus_t* bus) : bus(bus) {
-    for (int i = 0; i < 32; i++) {
+    for (int i = 1; i < 32; i++) {
         regs[i] = register_garbage_value; // initialize registers to garbage value
     }
 
@@ -34,5 +34,32 @@ void ps1::cpu_t::tick() {
 }
 
 void ps1::cpu_t::execute(cpu_instr_t instr) {
-    printf("EXECUTING 0x%08X: 0x%08X\n", pc, (uint32_t)instr); // print instruction
+    switch (instr.a.opcode) {
+        case 0b001111: {
+            op_lui(instr);
+
+            break;
+        }
+
+        default: {
+            DEBUG_CODE(char err_msg_buffer[64]);
+            DEBUG_CODE(sprintf(err_msg_buffer, "COULD NOT EXECUTE 0x%08X: 0x%08X (opcode %d)", pc, (uint32_t)instr, instr.a.opcode));
+            ASSERT(false, err_msg_buffer);
+
+            break;
+        }
+    }
+}
+
+uint32_t ps1::cpu_t::get_reg(uint32_t i) {
+    return regs[i];
+}
+
+void ps1::cpu_t::set_reg(uint32_t i, uint32_t v) {
+    regs[i] = v;
+    regs[0] = 0; // $zero is always zero // ! can be disabled for optimization
+}
+
+void ps1::cpu_t::op_lui(cpu_instr_t instr) {
+    set_reg(instr.b.rt, instr.b.imm << 16);
 }
