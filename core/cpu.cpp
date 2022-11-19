@@ -3,7 +3,6 @@
 
 namespace ps1 {
     constexpr cpu_reg_t register_garbage_value = 0xDEADBEEF; // magic value for debugging
-    constexpr cpu_reg_t bios_main_func_addr = 0xBFC00000; // BIOS main function address
 }
 
 ps1::cpu_instr_t::cpu_instr_t(uint32_t value) : raw(value) {}
@@ -19,7 +18,7 @@ ps1::cpu_t::cpu_t(bus_t* bus) : bus(bus) {
 
     regs[0] = 0; // $zero is always zero
 
-    pc = bios_main_func_addr; // start at BIOS main function
+    pc = BIOS_ENTRY; // start at BIOS main function
 
     hi = register_garbage_value;
     lo = register_garbage_value;
@@ -28,15 +27,27 @@ ps1::cpu_t::cpu_t(bus_t* bus) : bus(bus) {
 void ps1::cpu_t::tick() {
     cpu_instr_t instr = bus->fetch32(pc); // fetch instruction from memory
 
-    pc += sizeof cpu_instr_t; // advance program counter
-
     execute(instr); // execute instruction
+
+    pc += sizeof cpu_instr_t; // advance program counter
 }
 
 void ps1::cpu_t::execute(cpu_instr_t instr) {
-    switch (instr.a.opcode) {
-        case 0b001111: {
+    switch (static_cast <cpu_opcode_t> (instr.a.opcode)) {
+        case cpu_opcode_t::lui: {
             op_lui(instr);
+
+            break;
+        }
+
+        case cpu_opcode_t::ori: {
+            op_ori(instr);
+
+            break;
+        }
+
+        case cpu_opcode_t::sw: {
+            op_sw(instr);
 
             break;
         }
@@ -61,5 +72,13 @@ void ps1::cpu_t::set_reg(uint32_t i, uint32_t v) {
 }
 
 void ps1::cpu_t::op_lui(cpu_instr_t instr) {
-    set_reg(instr.b.rt, instr.b.imm << 16);
+    set_reg(instr.b.rt, instr.b.imm16 << 16);
+}
+
+void ps1::cpu_t::op_ori(cpu_instr_t instr) {
+    set_reg(instr.b.rt, get_reg(instr.b.rs) | instr.b.imm16);
+}
+
+void ps1::cpu_t::op_sw(cpu_instr_t instr) {
+    bus->store32(get_reg(instr.b.rs) + (uint32_t)(int16_t)instr.b.imm16, get_reg(instr.b.rt));
 }

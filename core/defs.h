@@ -43,6 +43,19 @@ using pair_t = std::pair <T1, T2>;
 
 
 namespace ps1 {
+    constexpr uint32_t BIOS_KSEG1 = 0xBFC00000;
+    constexpr uint32_t BIOS_SIZE = 512 * 1024;
+    constexpr uint32_t BIOS_ENTRY = 0xBFC00000;
+
+    constexpr uint32_t HARDREG_KUSEG = 0x1F801000;
+    constexpr uint32_t HARDREG_SIZE = 8 * 1024;
+
+    constexpr uint32_t EXPANSION1_KUSEG = 0x1F000000;
+    constexpr uint32_t EXPANSION2_KUSEG = 0x1F802000;
+}
+
+
+namespace ps1 {
     typedef uint32_t cpu_reg_t;
     typedef uint32_t mem_addr_t;
 

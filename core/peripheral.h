@@ -15,9 +15,9 @@ namespace ps1 {
     };
 
     struct peripheral_i {
-        virtual ~peripheral_i() noexcept = 0;
+        virtual ~peripheral_i() = 0;
 
         virtual uint32_t fetch32(mem_addr_t) const = 0;
-        // virtual void store32(mem_addr_t, uint32_t) = 0;
+        virtual void store32(mem_addr_t, uint32_t) = 0;
     };
 }

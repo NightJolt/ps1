@@ -21,11 +21,17 @@ namespace ps1 {
         } a;
 
         struct {
-            uint32_t imm : 16;
+            uint32_t imm16 : 16;
             uint32_t rt : 5;
             uint32_t rs : 5;
             uint32_t opcode : 6;
         } b;
+    };
+
+    enum struct cpu_opcode_t {
+        lui = 0b001111,
+        ori = 0b001101,
+        sw = 0b101011,
     };
 
     // 32-bit MIPS R3000A processor.
@@ -41,7 +47,9 @@ namespace ps1 {
         uint32_t get_reg(uint32_t);
         void set_reg(uint32_t, uint32_t);
 
-        void op_lui(cpu_instr_t);
+        void op_lui(cpu_instr_t); // opcode 15
+        void op_ori(cpu_instr_t); // opcode 13
+        void op_sw(cpu_instr_t); // opcode 43
 
         cpu_reg_t regs[32]; // general purpose registers
         cpu_reg_t pc; // program counter

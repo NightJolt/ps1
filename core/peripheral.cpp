@@ -12,4 +12,4 @@ bool ps1::mem_range_t::contains(mem_addr_t mem_addr) const {
     return o < size && o >= 0;
 }
 
-ps1::peripheral_i::~peripheral_i() noexcept = default;
+ps1::peripheral_i::~peripheral_i() = default;
