@@ -34,6 +34,10 @@ void ps1::cpu_t::tick() {
 
 void ps1::cpu_t::execute(cpu_instr_t instr) {
     switch (static_cast <cpu_opcode_t> (instr.a.opcode)) {
+        case cpu_opcode_t::special: {
+            goto execute_special;
+        }
+
         case cpu_opcode_t::lui: {
             op_lui(instr);
 
@@ -52,14 +56,45 @@ void ps1::cpu_t::execute(cpu_instr_t instr) {
             break;
         }
 
-        default: {
-            DEBUG_CODE(char err_msg_buffer[64]);
-            DEBUG_CODE(sprintf(err_msg_buffer, "COULD NOT EXECUTE 0x%08X: 0x%08X (opcode %d)", pc, (uint32_t)instr, instr.a.opcode));
-            ASSERT(false, err_msg_buffer);
+        case cpu_opcode_t::addiu: {
+            op_addiu(instr);
 
             break;
         }
+
+        default: {
+            goto execute_err;
+        }
     }
+
+    return;
+
+execute_special:
+    switch (static_cast <cpu_subfunc_t> (instr.a.subfunc)) {
+        case cpu_subfunc_t::ssl: {
+            op_ssl(instr);
+
+            break;
+        }
+
+        default: {
+            goto execute_err;
+        }
+    }
+
+    return;
+
+execute_err:
+    DEBUG_CODE(char err_msg_buffer[64]);
+    DEBUG_CODE(
+        sprintf(
+            err_msg_buffer,
+            "COULD NOT EXECUTE 0x%08X: 0x%08X (opcode %d-%d)",
+            pc, (uint32_t)instr,
+            (uint32_t)(bool)instr.a.opcode , instr.a.opcode ? instr.a.opcode : instr.a.subfunc
+        )
+    );
+    ASSERT(false, err_msg_buffer);
 }
 
 uint32_t ps1::cpu_t::get_reg(uint32_t i) {
@@ -68,7 +103,7 @@ uint32_t ps1::cpu_t::get_reg(uint32_t i) {
 
 void ps1::cpu_t::set_reg(uint32_t i, uint32_t v) {
     regs[i] = v;
-    regs[0] = 0; // $zero is always zero // ! can be disabled for optimization
+    regs[0] = 0; // $zero is always zero
 }
 
 void ps1::cpu_t::op_lui(cpu_instr_t instr) {
@@ -81,4 +116,12 @@ void ps1::cpu_t::op_ori(cpu_instr_t instr) {
 
 void ps1::cpu_t::op_sw(cpu_instr_t instr) {
     bus->store32(get_reg(instr.b.rs) + (uint32_t)(int16_t)instr.b.imm16, get_reg(instr.b.rt));
+}
+
+void ps1::cpu_t::op_ssl(cpu_instr_t instr) {
+    set_reg(instr.a.rt, get_reg(instr.a.rs) << instr.a.imm5);
+}
+
+void ps1::cpu_t::op_addiu(cpu_instr_t instr) {
+    set_reg(instr.b.rt, get_reg(instr.b.rs) + (uint32_t)(int16_t)instr.b.imm16); // * not a signed addition
 }
