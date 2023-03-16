@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <unordered_map>
+#include <functional>
 // #include <cstdio>
 
 #if defined(PS1_DEBUG)
@@ -40,6 +42,12 @@ using optional_t = std::optional <T>;
 
 template <class T1, class T2>
 using pair_t = std::pair <T1, T2>;
+
+template <class T1, class T2>
+using umap_t = std::unordered_map <T1, T2>;
+
+template <class T>
+using func_t = std::function <T>;
 
 
 namespace ps1 {

@@ -48,6 +48,8 @@ namespace ps1 {
         void tick(); // advance by one instruction
 
         void execute(cpu_instr_t); // execute instruction
+        void execute_special(cpu_instr_t); // execute special instruction
+        void execute_err(cpu_instr_t); // handle invalid cpu instruction
 
     private:
         uint32_t get_reg(uint32_t);
@@ -58,6 +60,9 @@ namespace ps1 {
         void op_sw(cpu_instr_t);
         void op_ssl(cpu_instr_t);
         void op_addiu(cpu_instr_t);
+
+        umap_t <cpu_opcode_t, func_t <void(cpu_instr_t)>> opmap;
+        umap_t <cpu_subfunc_t, func_t <void(cpu_instr_t)>> opspecmap;
 
         cpu_reg_t regs[32]; // general purpose registers
         cpu_reg_t pc; // program counter

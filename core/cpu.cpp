@@ -22,6 +22,18 @@ ps1::cpu_t::cpu_t(bus_t* bus) : bus(bus) {
 
     hi = register_garbage_value;
     lo = register_garbage_value;
+
+    opmap = {
+        { cpu_opcode_t::special, [this](cpu_instr_t instr) { this->execute_special(instr); } },
+        { cpu_opcode_t::lui, [this](cpu_instr_t instr) { this->op_lui(instr); } },
+        { cpu_opcode_t::ori, [this](cpu_instr_t instr) { this->op_ori(instr); } },
+        { cpu_opcode_t::sw, [this](cpu_instr_t instr) { this->op_sw(instr); } },
+        { cpu_opcode_t::addiu, [this](cpu_instr_t instr) { this->op_addiu(instr); } }
+    };
+
+    opspecmap = {
+        { cpu_subfunc_t::ssl, [this](cpu_instr_t instr) { this->op_ssl(instr); } }
+    };
 }
 
 void ps1::cpu_t::tick() {
@@ -29,62 +41,34 @@ void ps1::cpu_t::tick() {
 
     execute(instr); // execute instruction
 
-    pc += sizeof cpu_instr_t; // advance program counter
+    pc += sizeof(cpu_instr_t); // advance program counter
 }
 
 void ps1::cpu_t::execute(cpu_instr_t instr) {
-    switch (static_cast <cpu_opcode_t> (instr.a.opcode)) {
-        case cpu_opcode_t::special: {
-            goto execute_special;
-        }
+    auto opcode = static_cast <cpu_opcode_t> (instr.a.opcode);
 
-        case cpu_opcode_t::lui: {
-            op_lui(instr);
+    if (opmap.contains(opcode)) {
+        opmap[opcode](instr);
 
-            break;
-        }
-
-        case cpu_opcode_t::ori: {
-            op_ori(instr);
-
-            break;
-        }
-
-        case cpu_opcode_t::sw: {
-            op_sw(instr);
-
-            break;
-        }
-
-        case cpu_opcode_t::addiu: {
-            op_addiu(instr);
-
-            break;
-        }
-
-        default: {
-            goto execute_err;
-        }
+        return;
     }
 
-    return;
+    DEBUG_CODE(execute_err(instr));
+}
 
-execute_special:
-    switch (static_cast <cpu_subfunc_t> (instr.a.subfunc)) {
-        case cpu_subfunc_t::ssl: {
-            op_ssl(instr);
+void ps1::cpu_t::execute_special(cpu_instr_t instr) {
+    auto subfunc = static_cast <cpu_subfunc_t> (instr.a.subfunc);
 
-            break;
-        }
+    if (opspecmap.contains(subfunc)) {
+        opspecmap[subfunc](instr);
 
-        default: {
-            goto execute_err;
-        }
+        return;
     }
 
-    return;
+    DEBUG_CODE(execute_err(instr));
+}
 
-execute_err:
+void ps1::cpu_t::execute_err(cpu_instr_t instr) {
     DEBUG_CODE(char err_msg_buffer[64]);
     DEBUG_CODE(
         sprintf(
