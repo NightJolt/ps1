@@ -41,7 +41,7 @@ ps1::cpu_t::cpu_t(bus_t* bus) : bus(bus) {
 
     opspecmap = {
         { cpu_subfunc_t::SSL, [this](cpu_instr_t instr) { this->op_ssl(instr); } },
-        // { cpu_subfunc_t::OR, [this](cpu_instr_t instr) { this->op_or(instr); } },
+        { cpu_subfunc_t::OR, [this](cpu_instr_t instr) { this->op_or(instr); } },
     };
 }
 
