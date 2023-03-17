@@ -51,15 +51,32 @@ using func_t = std::function <T>;
 
 
 namespace ps1 {
+    constexpr uint32_t RAM_KUSEG = 0x00000000;
+    constexpr uint32_t RAM_KSEG0 = 0x80000000;
+    constexpr uint32_t RAM_KSEG1 = 0xA0000000;
+    constexpr uint32_t RAM_SIZE = 2048 * 1024;
+
+    constexpr uint32_t EXPANSION1_KUSEG = 0x1F000000;
+    constexpr uint32_t EXPANSION2_KUSEG = 0x1F802000;
+
+    constexpr uint32_t SCRATCHPAD_KUSEG = 0x1F800000;
+    constexpr uint32_t SCRATCHPAD_KSEG0 = 0x9F800000;
+    constexpr uint32_t SCRATCHPAD_KSEG1 = 0xBF800000;
+    constexpr uint32_t SCRATCHPAD_SIZE = 1024;
+
+    constexpr uint32_t HARDREG_KUSEG = 0x1F801000;
+    constexpr uint32_t HARDREG_KSEG0 = 0x9F801000;
+    constexpr uint32_t HARDREG_KSEG1 = 0xBF801000;
+    constexpr uint32_t HARDREG_SIZE = 8 * 1024;
+
+    constexpr uint32_t BIOS_KUSEG = 0x1FC00000;
+    constexpr uint32_t BIOS_KSEG0 = 0x9FC00000;
     constexpr uint32_t BIOS_KSEG1 = 0xBFC00000;
     constexpr uint32_t BIOS_SIZE = 512 * 1024;
     constexpr uint32_t BIOS_ENTRY = 0xBFC00000;
 
-    constexpr uint32_t HARDREG_KUSEG = 0x1F801000;
-    constexpr uint32_t HARDREG_SIZE = 8 * 1024;
-
-    constexpr uint32_t EXPANSION1_KUSEG = 0x1F000000;
-    constexpr uint32_t EXPANSION2_KUSEG = 0x1F802000;
+    constexpr uint32_t IOPORTS_KSEG2 = 0xFFFE0000;
+    constexpr uint32_t IOPORTS_SIZE = 512;
 }
 
 
