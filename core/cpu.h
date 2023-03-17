@@ -26,18 +26,25 @@ namespace ps1 {
             uint32_t rs : 5;
             uint32_t opcode : 6;
         } b;
+
+        struct {
+            uint32_t imm26 : 26;
+            uint32_t opcode : 6;
+        } c;
     };
 
     enum struct cpu_opcode_t {
-        special = 0b000000,
-        lui = 0b001111,
-        ori = 0b001101,
-        sw = 0b101011,
-        addiu = 0b001001,
+        SPECIAL = 0b000000,
+        LUI = 0b001111,
+        ORI = 0b001101,
+        SW = 0b101011,
+        ADDIU = 0b001001,
+        J = 0b000010,
     };
 
     enum struct cpu_subfunc_t {
-        ssl = 0b000000,
+        SSL = 0b000000,
+        OR = 0b100101,
     };
 
     // 32-bit MIPS R3000A processor.
@@ -60,9 +67,13 @@ namespace ps1 {
         void op_sw(cpu_instr_t);
         void op_ssl(cpu_instr_t);
         void op_addiu(cpu_instr_t);
+        void op_j(cpu_instr_t);
+        void op_or(cpu_instr_t);
 
         umap_t <cpu_opcode_t, func_t <void(cpu_instr_t)>> opmap;
         umap_t <cpu_subfunc_t, func_t <void(cpu_instr_t)>> opspecmap;
+
+        cpu_instr_t delay_slot; // instruction in delay slot
 
         cpu_reg_t regs[32]; // general purpose registers
         cpu_reg_t pc; // program counter
