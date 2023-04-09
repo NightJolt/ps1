@@ -8,6 +8,11 @@
 #include <functional>
 // #include <cstdio>
 
+#include <glfw/glfw3.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
 #if defined(PS1_DEBUG)
     #include <iostream>
 #endif

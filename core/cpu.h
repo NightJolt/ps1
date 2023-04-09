@@ -58,6 +58,11 @@ namespace ps1 {
         void execute_special(cpu_instr_t); // execute special instruction
         void execute_err(cpu_instr_t); // handle invalid cpu instruction
 
+        void halt();
+
+        // for debugging
+        bool halted;
+
     private:
         uint32_t get_reg(uint32_t);
         void set_reg(uint32_t, uint32_t);
@@ -78,7 +83,7 @@ namespace ps1 {
         cpu_reg_t regs[32]; // general purpose registers
         cpu_reg_t pc; // program counter
         cpu_reg_t hi; // hi register
-        cpu_reg_t lo; // hi register
+        cpu_reg_t lo; // lo register
 
         bus_t* bus; // pointer to bus
     };

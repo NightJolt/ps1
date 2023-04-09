@@ -1,5 +1,6 @@
 #include "cpu.h"
 #include "bus.h"
+#include "logger.h"
 
 namespace ps1 {
     constexpr cpu_reg_t register_garbage_value = 0xDEADBEEF; // magic value for debugging
@@ -16,7 +17,7 @@ ps1::cpu_instr_t::operator uint32_t() {
     return raw;
 }
 
-ps1::cpu_t::cpu_t(bus_t* bus) : bus(bus) {
+ps1::cpu_t::cpu_t(bus_t* bus) : bus(bus), halted(false) {
     for (int i = 1; i < 32; i++) {
         regs[i] = register_garbage_value; // initialize registers to garbage value
     }
@@ -90,7 +91,17 @@ void ps1::cpu_t::execute_err(cpu_instr_t instr) {
             (uint32_t)(bool)instr.a.opcode , instr.a.opcode ? instr.a.opcode : instr.a.subfunc
         )
     );
-    ASSERT(false, err_msg_buffer);
+    // ASSERT(false, err_msg_buffer);
+
+    DEBUG_CODE(logger::push(err_msg_buffer, "cpu"));
+
+    halt();
+}
+
+void ps1::cpu_t::halt() {
+    halted = true;
+
+    DEBUG_CODE(logger::push("cpu halted!", "cpu"));
 }
 
 uint32_t ps1::cpu_t::get_reg(uint32_t i) {

@@ -24,6 +24,8 @@ endif()
 
 add_subdirectory(libs)
 
+include_directories(core)
+
 if (PS1_WINDOWS)
     file (
         GLOB_RECURSE PROJECT_FILES
