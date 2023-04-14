@@ -1,15 +1,15 @@
 #include "bus.h"
 
-void ps1::bus_t::add_device(peripheral_i* device, mem_range_t range) {
-    devices.emplace_back(range, device);
+void ps1::bus_connect(bus_t* bus, device_info_t device_info) {
+    bus->devices.emplace_back(device_info);
 }
 
-uint32_t ps1::bus_t::fetch32(mem_addr_t mem_addr) const {
+uint32_t ps1::bus_fetch32(bus_t* bus, mem_addr_t mem_addr) {
     ASSERT(mem_addr % 4 == 0, "Unaligned memory access");
 
-    for (const auto& [range, device] : devices) {
-        if (range.contains(mem_addr)) {
-            return device->fetch32(range.offset(mem_addr));
+    for (auto& device_info : bus->devices) {
+        if (device_info.mem_range.contains(mem_addr)) {
+            return device_info.fetch32(device_info.device, device_info.mem_range.offset(mem_addr));
         }
     }
 
@@ -18,12 +18,13 @@ uint32_t ps1::bus_t::fetch32(mem_addr_t mem_addr) const {
     return 0;
 }
 
-void ps1::bus_t::store32(mem_addr_t mem_addr, uint32_t data) {
+void ps1::bus_store32(bus_t* bus, mem_addr_t mem_addr, uint32_t data) {
     ASSERT(mem_addr % 4 == 0, "Unaligned memory access");
     
-    for (const auto& [range, device] : devices) {
-        if (range.contains(mem_addr)) {
-            device->store32(range.offset(mem_addr), data);
+    for (auto& device_info : bus->devices) {
+        if (device_info.mem_range.contains(mem_addr)) {
+            device_info.store32(device_info.device, device_info.mem_range.offset(mem_addr), data);
+
             return;
         }
     }

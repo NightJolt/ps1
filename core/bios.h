@@ -4,16 +4,12 @@
 #include "peripheral.h"
 
 namespace ps1 {
-    class bios_t : public peripheral_i {
-    public:
-        bios_t(const str_t&);
-        ~bios_t() override = default;
-        
-        // peripheral_i
-        uint32_t fetch32(mem_addr_t) const override;
-        void store32(mem_addr_t, uint32_t) override;
-
-    private:
+    struct bios_t {
         dyn_arr_t <uint8_t> data;
     };
+
+    void bios_init(bios_t*, const str_t&);
+
+    uint32_t bios_fetch32(void*, mem_addr_t);
+    void bios_store32(void*, mem_addr_t, uint32_t);
 }

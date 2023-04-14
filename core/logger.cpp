@@ -1,17 +1,15 @@
 #include "logger.h"
 
 namespace {
-    using namespace ps1::logger;
-
     auto channels = dyn_arr_t <str_t> ();
-    auto logs = dyn_arr_t <dyn_arr_t <pair_t <str_t, type_t>>> ();
+    auto logs = dyn_arr_t <dyn_arr_t <pair_t <str_t, ps1::logger::type_t>>> ();
     auto order = dyn_arr_t <pair_t <uint32_t, uint32_t>> ();
 
-    uint32_t get_type_color(type_t type) {
+    uint32_t get_type_color(ps1::logger::type_t type) {
         return
-            type == type_t::error ? IM_COL32(211, 47, 47, 255) :
-                            type == type_t::warning ? IM_COL32(255, 179, 0, 255) :
-                            type == type_t::info ? IM_COL32(3, 155, 229, 255):
+            type == ps1::logger::type_t::error ? IM_COL32(211, 47, 47, 255) :
+                            type == ps1::logger::type_t::warning ? IM_COL32(255, 179, 0, 255) :
+                            type == ps1::logger::type_t::info ? IM_COL32(3, 155, 229, 255):
                             IM_COL32(224, 224, 224, 255);
     }
 

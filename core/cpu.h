@@ -4,10 +4,12 @@
 
 namespace ps1 {
     union cpu_instr_t {
-        cpu_instr_t() = default;
-        cpu_instr_t(uint32_t);
+        cpu_instr_t() {}
+        cpu_instr_t(uint32_t value) : raw(value) {}
 
-        operator uint32_t();
+        operator uint32_t() {
+            return raw;
+        }
 
         uint32_t raw;
 
@@ -48,36 +50,7 @@ namespace ps1 {
     };
 
     // 32-bit MIPS R3000A processor.
-    class cpu_t {
-    public:
-        cpu_t(bus_t*);
-
-        void tick(); // advance by one instruction
-
-        void execute(cpu_instr_t); // execute instruction
-        void execute_special(cpu_instr_t); // execute special instruction
-        void execute_err(cpu_instr_t); // handle invalid cpu instruction
-
-        void halt();
-
-        // for debugging
-        bool halted;
-
-    private:
-        uint32_t get_reg(uint32_t);
-        void set_reg(uint32_t, uint32_t);
-
-        void op_lui(cpu_instr_t);
-        void op_ori(cpu_instr_t);
-        void op_sw(cpu_instr_t);
-        void op_ssl(cpu_instr_t);
-        void op_addiu(cpu_instr_t);
-        void op_j(cpu_instr_t);
-        void op_or(cpu_instr_t);
-
-        umap_t <cpu_opcode_t, func_t <void(cpu_instr_t)>> opmap;
-        umap_t <cpu_subfunc_t, func_t <void(cpu_instr_t)>> opspecmap;
-
+    struct cpu_t {
         cpu_instr_t delay_slot; // instruction in delay slot
 
         cpu_reg_t regs[32]; // general purpose registers
@@ -86,5 +59,11 @@ namespace ps1 {
         cpu_reg_t lo; // lo register
 
         bus_t* bus; // pointer to bus
+        
+        bool halted; // is in halted state
     };
+
+    void cpu_init(cpu_t*, bus_t*); // init scpu state
+    void cpu_tick(cpu_t*); // advance by one instruction
+    void halt(cpu_t*); // put cpu in halted state
 }

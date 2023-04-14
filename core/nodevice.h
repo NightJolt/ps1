@@ -2,16 +2,11 @@
 
 #include "defs.h"
 #include "peripheral.h"
+#include "logger.h"
 
 namespace ps1 {
-    class nodevice_t : public peripheral_i {
-    public:
-        ~nodevice_t() override = default;
+    struct nodevice_t {};
 
-        // peripheral_i
-        uint32_t fetch32(mem_addr_t) const override;
-        void store32(mem_addr_t, uint32_t) override;
-        
-    private:
-    };
+    uint32_t nodevice_fetch32(void*, mem_addr_t);
+    void nodevice_store32(void*, mem_addr_t, uint32_t);
 }
