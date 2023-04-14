@@ -93,7 +93,7 @@ void ps1::cpu_t::execute_err(cpu_instr_t instr) {
     );
     // ASSERT(false, err_msg_buffer);
 
-    DEBUG_CODE(logger::push(err_msg_buffer, "cpu"));
+    DEBUG_CODE(logger::push(err_msg_buffer, logger::type_t::error, "cpu"));
 
     halt();
 }
@@ -101,7 +101,7 @@ void ps1::cpu_t::execute_err(cpu_instr_t instr) {
 void ps1::cpu_t::halt() {
     halted = true;
 
-    DEBUG_CODE(logger::push("cpu halted!", "cpu"));
+    DEBUG_CODE(logger::push("CPU HALTED", logger::type_t::error, "cpu"));
 }
 
 uint32_t ps1::cpu_t::get_reg(uint32_t i) {

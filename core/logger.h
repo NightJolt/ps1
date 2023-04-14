@@ -3,7 +3,14 @@
 #include "defs.h"
 
 namespace ps1::logger {
-    void push(const str_t&, const str_t& = "all");
+    enum struct type_t {
+        message,
+        info,
+        warning,
+        error
+    };
+
+    void push(const str_t&, type_t type, const str_t& = "all");
     
     void display();
 }
