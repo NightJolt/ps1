@@ -7,6 +7,7 @@
 
 #include "render.h"
 #include "logger.h"
+#include "debugger.h"
 
 int main() {
     ps1::bus_t bus;
@@ -45,9 +46,10 @@ int main() {
     while (!ps1::render::should_close()) {
         ps1::render::begin_frame();
 
-        if (!cpu.halted) ps1::cpu_tick(&cpu);
+        if (cpu.state == ps1::cpu_state_t::running) ps1::cpu_tick(&cpu);
 
         ps1::logger::display();
+        ps1::debugger::display_cpu_info(&cpu);
         ps1::render::end_frame();
     }
 

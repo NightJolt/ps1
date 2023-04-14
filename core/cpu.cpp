@@ -66,7 +66,7 @@ namespace ps1 {
 
         DEBUG_CODE(logger::push(err_msg_buffer, logger::type_t::error, "cpu"));
 
-        halt(cpu);
+        cpu_set_state(cpu, cpu_state_t::halted);
     }
 
     typedef void(*cpu_instr_handler_func)(cpu_t*, cpu_instr_t);
@@ -130,7 +130,10 @@ void ps1::cpu_init(cpu_t* cpu, bus_t* bus) {
     cpu->hi = register_garbage_value;
     cpu->lo = register_garbage_value;
 
-    cpu->halted = false;
+    cpu_set_state(cpu, cpu_state_t::sleeping);
+
+    // ! debug
+    cpu->instr_exec_cnt = 0;
 }
 
 void ps1::cpu_tick(cpu_t* cpu) {
@@ -140,10 +143,13 @@ void ps1::cpu_tick(cpu_t* cpu) {
     cpu->pc += sizeof(cpu_instr_t); // advance program counter
 
     execute(cpu, instr); // execute instruction
+    
+    // ! debug
+    cpu->instr_exec_cnt++;
 }
 
-void ps1::halt(cpu_t* cpu) {
-    cpu->halted = true;
+void ps1::cpu_set_state(cpu_t* cpu, cpu_state_t cpu_state) {
+    cpu->state = cpu_state;
 
-    DEBUG_CODE(logger::push("CPU HALTED", logger::type_t::error, "cpu"));
+    DEBUG_CODE(if (cpu_state == cpu_state_t::halted) logger::push("CPU HALTED", logger::type_t::error, "cpu"));
 }

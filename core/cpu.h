@@ -49,6 +49,12 @@ namespace ps1 {
         OR = 0b100101,
     };
 
+    enum struct cpu_state_t {
+        sleeping,
+        running,
+        halted
+    };
+
     // 32-bit MIPS R3000A processor.
     struct cpu_t {
         cpu_instr_t delay_slot; // instruction in delay slot
@@ -60,10 +66,13 @@ namespace ps1 {
 
         bus_t* bus; // pointer to bus
         
-        bool halted; // is in halted state
+        cpu_state_t state; // is in halted state
+
+        // * debug data
+        uint32_t instr_exec_cnt; // number of instructions executed
     };
 
     void cpu_init(cpu_t*, bus_t*); // init scpu state
     void cpu_tick(cpu_t*); // advance by one instruction
-    void halt(cpu_t*); // put cpu in halted state
+    void cpu_set_state(cpu_t*, cpu_state_t); // put cpu in halted state
 }

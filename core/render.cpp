@@ -6,7 +6,7 @@ namespace {
 
 GLFWwindow* ps1::render::init() {
     glfwInit();
-    ::window = glfwCreateWindow(640, 480, "ps1", NULL, NULL);
+    ::window = glfwCreateWindow(1280, 720, "ps1", NULL, NULL);
     glfwMakeContextCurrent(::window);
 
     ImGui::CreateContext();

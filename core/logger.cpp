@@ -63,12 +63,15 @@ void ps1::logger::display() {
 
         ImGui::Spacing();
 
-        ImGui::BeginTabBar("Channels");
+        ImGui::BeginTabBar("Channels", ImGuiTabBarFlags_FittingPolicyScroll);
 
         if (ImGui::BeginTabItem("all##tab")) {  
             ImGui::BeginChild("all##child");
 
             if (ImGui::BeginTable("all##table", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
+                ImGui::TableSetupColumn(nullptr, 0, 1);
+                ImGui::TableSetupColumn(nullptr, 0, 12);
+
                 for (auto& [channel_index, message_index] : order) {
                     const str_t& msg = logs[channel_index][message_index].first;
                     const type_t type = logs[channel_index][message_index].second;

@@ -1,5 +1,6 @@
 #include "bios.h"
 #include "file.h"
+#include "logger.h"
 
 void ps1::bios_init(bios_t* bios, const str_t& path) {
     auto binary_data = read_binary(path);
@@ -8,6 +9,8 @@ void ps1::bios_init(bios_t* bios, const str_t& path) {
     ASSERT(binary_data.value().size() == BIOS_SIZE, "BIOS binary size is invalid");
 
     bios->data = std::move(binary_data.value());
+
+    DEBUG_CODE(logger::push("bios loaded", logger::type_t::info, "bios"));
 }
 
 uint32_t ps1::bios_fetch32(void* bios, mem_addr_t offset) {
