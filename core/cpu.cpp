@@ -102,8 +102,6 @@ namespace ps1 {
 
         auto opcode = static_cast <cpu_opcode_t> (instr.a.opcode);
 
-        DEBUG_CODE(printf("Executing 0x%08X: 0x%08X\n", cpu->pc, (uint32_t)instr));
-
         if (opmap.contains(opcode)) {
             opmap[opcode](cpu, instr);
 
