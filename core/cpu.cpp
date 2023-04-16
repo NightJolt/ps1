@@ -28,6 +28,11 @@ namespace ps1 {
     }
 
     void set_c0reg(cpu_t* cpu, uint32_t i, uint32_t v) {
+        DEBUG_CODE(
+            if ((i == 3 || i == 5 || i == 6 || i == 7 || i == 9 || i == 11 || i == 13) && v != 0) 
+                logger::push("nonzero value written to hardware breakpoint register", logger::type_t::warning, "cpu")
+        );
+
         cpu->c0regs[i] = v;
     }
 }
@@ -88,6 +93,10 @@ namespace ps1 {
         }
     }
 
+    void op_sltu(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) < get_reg(cpu, instr.a.rt));
+    }
+
      // handle invalid cpu instruction
     void execute_err(cpu_t* cpu, cpu_instr_t instr) {
         DEBUG_CODE(char err_msg_buffer[64]);
@@ -121,6 +130,7 @@ namespace ps1 {
         static umap_t <cpu_subfunc_t, cpu_instr_handler_func> opmap = {
             { cpu_subfunc_t::SSL, op_ssl },
             { cpu_subfunc_t::OR, op_or },
+            { cpu_subfunc_t::SLTU, op_sltu },
         };
 
         auto subfunc = static_cast <cpu_subfunc_t> (instr.a.subfunc);

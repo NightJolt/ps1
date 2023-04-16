@@ -51,6 +51,7 @@ namespace ps1 {
     enum struct cpu_subfunc_t {
         SSL = 0b000000,
         OR = 0b100101,
+        SLTU = 0b101011,
     };
 
     enum struct cpu_state_t {

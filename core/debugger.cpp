@@ -105,6 +105,18 @@ void ps1::debugger::display_cpu_info(cpu_t* cpu) {
 
             ImGui::SameLine();
 
+            if (ImGui::Button("Jump")) {
+                cpu_set_state(cpu, cpu_state_t::running);
+                
+                while (true) {
+                    if (cpu->state != ps1::cpu_state_t::running) break;
+                    
+                    ps1::cpu_tick(cpu);
+                }
+            }
+
+            ImGui::SameLine();
+
             if (ImGui::Button("Step")) {
                 cpu_tick(cpu);
             }
