@@ -2,19 +2,17 @@
 
 #include <fstream>
 
-optional_t <dyn_arr_t <uint8_t>> ps1::read_binary(const str_t& path) {
-    dyn_arr_t <uint8_t> data;
-
+uint8_t* ps1::read_binary(const str_t& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
 
-    if (!file.is_open()) return std::nullopt;
+    if (!file.is_open()) return nullptr;
 
     auto size = file.tellg();
 
     file.seekg(0, std::ios::beg);
 
-    data.resize(size);
-    file.read(reinterpret_cast <char*> (data.data()), size);
+    uint8_t* data = new uint8_t[size];
+    file.read((char*)data, size);
 
-    return std::move(data);
+    return data;
 }

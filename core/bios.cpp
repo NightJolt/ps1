@@ -3,14 +3,15 @@
 #include "logger.h"
 
 void ps1::bios_init(bios_t* bios, const str_t& path) {
-    auto binary_data = read_binary(path);
+    bios->data = read_binary(path);
     
-    ASSERT(binary_data.has_value(), "Failed to load BIOS binary");
-    ASSERT(binary_data.value().size() == BIOS_SIZE, "BIOS binary size is invalid");
-
-    bios->data = std::move(binary_data.value());
+    ASSERT(bios->data, "Failed to load BIOS binary");
 
     DEBUG_CODE(logger::push("bios loaded", logger::type_t::info, "bios"));
+}
+
+void ps1::bios_del(bios_t* bios) {
+    delete[] bios->data;
 }
 
 uint32_t ps1::bios_fetch32(void* bios, mem_addr_t offset) {
@@ -22,7 +23,7 @@ uint32_t ps1::bios_fetch32(void* bios, mem_addr_t offset) {
 
     // return data32;
 
-    return *(uint32_t*)(((bios_t*)bios)->data.data() + offset); // ! faster but not portable
+    return *(uint32_t*)(((bios_t*)bios)->data + offset); // ! faster but not portable
 }
 
 void ps1::bios_store32(void* bios, mem_addr_t offset, uint32_t value) {

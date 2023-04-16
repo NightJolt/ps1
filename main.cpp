@@ -3,6 +3,7 @@
 #include "bios.h"
 #include "bus.h"
 #include "hardreg.h"
+#include "ram.h"
 #include "nodevice.h"
 
 #include "render.h"
@@ -23,6 +24,14 @@ int main() {
     bios_info.fetch32 = ps1::bios_fetch32;
     bios_info.store32 = ps1::bios_store32;
 
+    ps1::ram_t ram;
+    ps1::ram_init(&ram);
+    ps1::device_info_t ram_info;
+    ram_info.device = &bios;
+    ram_info.mem_range = { ps1::RAM_KSEG1, ps1::RAM_SIZE };
+    ram_info.fetch32 = ps1::ram_fetch32;
+    ram_info.store32 = ps1::ram_store32;
+
     ps1::hardreg_t hardreg;
     ps1::device_info_t hardreg_info;
     hardreg_info.device = &hardreg;
@@ -38,6 +47,7 @@ int main() {
     nodevice_info.store32 = ps1::nodevice_store32;
 
     ps1::bus_connect(&bus, bios_info);
+    ps1::bus_connect(&bus, ram_info);
     ps1::bus_connect(&bus, hardreg_info);
     ps1::bus_connect(&bus, nodevice_info);
 
@@ -55,6 +65,9 @@ int main() {
     }
 
     ps1::render::exit();
+
+    ps1::bios_del(&bios);
+    ps1::ram_del(&ram);
     
     return 0;
 }
