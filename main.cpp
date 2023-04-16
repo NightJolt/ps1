@@ -61,6 +61,7 @@ int main() {
         ps1::logger::display();
         ps1::debugger::display_cpu_info(&cpu);
         ps1::debugger::display_instr_view(&cpu, &bus);
+        ps1::debugger::display_ram_view(&ram);
         ps1::render::end_frame();
     }
 

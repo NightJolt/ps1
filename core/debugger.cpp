@@ -66,6 +66,25 @@ namespace ps1 {
         ImGui::TableNextColumn();
         ImGui::TextWrapped(dec_buffer);
     }
+
+    void display_ram(uint32_t addr, uint32_t value) {
+        static char addr_buffer[12];
+        static char hex_buffer[12];
+        static char dec_buffer[12];
+
+        sprintf(addr_buffer, "0x%08X", addr);
+        sprintf(hex_buffer, "0x%08X", value);
+        sprintf(dec_buffer, "%u", value);
+
+        ImGui::TableNextColumn();
+        ImGui::TextWrapped(addr_buffer);
+
+        ImGui::TableNextColumn();
+        ImGui::TextWrapped(hex_buffer);
+        
+        ImGui::TableNextColumn();
+        ImGui::TextWrapped(dec_buffer);
+    }
 }
 
 void ps1::debugger::display_cpu_info(cpu_t* cpu) {
@@ -124,13 +143,15 @@ void ps1::debugger::display_cpu_info(cpu_t* cpu) {
         ImGui::Spacing();
 
         if (ImGui::BeginTable("delay_slot", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
-            ImGui::TableSetupColumn(nullptr, 0, 4);
-            ImGui::TableSetupColumn(nullptr, 0, 4);
-            ImGui::TableSetupColumn(nullptr, 0, 13);
+            ImGui::TableSetupColumn("Delay Slot", 0, 4);
+            ImGui::TableSetupColumn("Address", 0, 4);
+            ImGui::TableSetupColumn("Value", 0, 13);
+
+            ImGui::TableHeadersRow();
             
             {
                 ImGui::TableNextColumn();
-                ImGui::TextWrapped("Instr Delay Slot");
+                ImGui::TextWrapped("Instruction");
 
                 static char instr_buffer[12];
                 sprintf(instr_buffer, "0x%08X", (uint32_t)cpu->instr_delay_slot);
@@ -144,7 +165,7 @@ void ps1::debugger::display_cpu_info(cpu_t* cpu) {
             
             {
                 ImGui::TableNextColumn();
-                ImGui::TextWrapped("Load Delay Slot");
+                ImGui::TextWrapped("Load");
                 
                 ImGui::TableNextColumn();
                 ImGui::TextWrapped(("R" + std::to_string(cpu->load_delay_target)).c_str());
@@ -237,6 +258,47 @@ void ps1::debugger::display_instr_view(cpu_t* cpu, bus_t* bus) {
             
             ImGui::EndTable();
         }
+
+    ImGui::End();
+}
+
+void ps1::debugger::display_ram_view(ram_t* ram) {
+    static int32_t addr_inp = 0;
+    static int32_t addr = 0;
+    bool update = false;
+
+    ImGui::Begin("RAM");
+
+        ImGui::SetNextItemWidth(-1);
+
+        if (ImGui::InputInt(" ", &addr_inp, sizeof(cpu_instr_t), sizeof(cpu_instr_t) * 25)) {
+            if (addr_inp >= 0 && addr_inp < RAM_SIZE && addr_inp % sizeof(cpu_instr_t) == 0) addr = addr_inp, update = true;
+            else addr_inp = addr;
+        }
+
+        ImGui::BeginChild("ram_view");
+
+            if (ImGui::BeginTable("ram", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
+                ImGui::TableSetupColumn(nullptr, 0, 1);
+                ImGui::TableSetupColumn(nullptr, 0, 1);
+                ImGui::TableSetupColumn(nullptr, 0, 1);
+
+                static int32_t radius = sizeof(cpu_instr_t) * 32;
+                
+                for (mem_addr_t offset = std::max(addr - radius, 0); offset <= std::min(addr + radius, (int32_t)RAM_SIZE); offset += sizeof(cpu_instr_t)) {
+                    display_ram(offset, *(uint32_t*)(ram->data + offset));
+                }
+                
+                ImGui::EndTable();
+            }
+
+            if (update) {
+                ImGui::SetScrollHereY(.5f);
+
+                update = false;
+            }
+
+        ImGui::EndChild();
 
     ImGui::End();
 }
