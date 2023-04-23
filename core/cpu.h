@@ -52,6 +52,7 @@ namespace ps1 {
         SSL = 0b000000,
         OR = 0b100101,
         SLTU = 0b101011,
+        ADDU = 0b100001,
     };
 
     enum struct cpu_state_t {
@@ -60,30 +61,57 @@ namespace ps1 {
         halted
     };
 
-    // 32-bit MIPS R3000A processor.
+    // * 32-bit MIPS R3000A processor.
     struct cpu_t {
-        cpu_instr_t instr_delay_slot; // instruction in delay slot
+        /*
+        * instruction in delay slot
+        * this instruction is going to be executed on next cpu cycle
+        */
+        cpu_instr_t instr_delay_slot;
         
+        /*
+        * fetching data from ram first stores value in load delay slot.
+        * after half* cycle value is stored in target register
+        */
         uint32_t load_delay_target;
         uint32_t load_delay_value;
 
-        cpu_reg_t in_regs[32]; // general purpose registers
+        /*
+        * need two set of registers to simulate half cycles from load delay slot
+        */
+        cpu_reg_t in_regs[32]; // * general purpose registers
         cpu_reg_t out_regs[32]; // * we need to torelate load delay slot. however, copying 128 byte per cycle is terrible. need better solution!
-        cpu_reg_t pc; // program counter
-        cpu_reg_t hi; // hi register
-        cpu_reg_t lo; // lo register
+        cpu_reg_t hi; // * hi register
+        cpu_reg_t lo; // * lo register
 
-        cpu_reg_t c0regs[32]; // cop0 registers
+        /*
+        * program counter pointer
+        * instruction on this address will be fetched and stored in instruction delay slot on next cpu cycle
+        */
+        cpu_reg_t pc;
 
-        bus_t* bus; // pointer to bus
-        
-        cpu_state_t state; // is in halted state
+        /*
+        * cop0 registers
+        *
+        * reg 12 (status register):
+        * bit 16 - redirects all bus r/w to cache
+        */
+        cpu_reg_t c0regs[32];
 
-        // * debug data
-        uint32_t instr_exec_cnt; // number of instructions executed
+        bus_t* bus;
+
+        cpu_state_t state;
+
+        // ! debug data
+        uint32_t instr_exec_cnt; // * number of instructions executed
     };
 
-    void cpu_init(cpu_t*, bus_t*); // init scpu state
-    void cpu_tick(cpu_t*); // advance by one instruction
-    void cpu_set_state(cpu_t*, cpu_state_t); // put cpu in halted state
+     // * init scpu state
+    void cpu_init(cpu_t*, bus_t*);
+
+    // * advance by one instruction
+    void cpu_tick(cpu_t*);
+
+    // *put cpu in halted state
+    void cpu_set_state(cpu_t*, cpu_state_t);
 }

@@ -56,6 +56,13 @@ using func_t = std::function <T>;
 
 
 namespace ps1 {
+    /*
+    * KUSEG : cached
+    * KSEG0 : cached
+    * KSEG1 : uncached
+    * KSEG2 : cached
+    */
+
     constexpr uint32_t RAM_KUSEG = 0x00000000;
     constexpr uint32_t RAM_KSEG0 = 0x80000000;
     constexpr uint32_t RAM_KSEG1 = 0xA0000000;

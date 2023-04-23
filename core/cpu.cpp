@@ -3,10 +3,10 @@
 #include "logger.h"
 
 namespace ps1 {
-    constexpr cpu_reg_t register_garbage_value = 0xDEADBEEF; // magic value for debugging
-    const cpu_instr_t nop = 0x00000000; // no operation
+    constexpr cpu_reg_t register_garbage_value = 0xDEADBEEF; // * magic value for debugging
+    const cpu_instr_t nop = 0x00000000; // * no operation
 
-    constexpr uint32_t SR_ISOLATE_CACHE_BIT = 1 << 16; // redirect all subsequent R/W to cache
+    constexpr uint32_t SR_ISOLATE_CACHE_BIT = 1 << 16; // * redirect all subsequent R/W to cache
 
     uint32_t sign_extend_16(uint32_t value) {
         return (uint32_t)(int16_t)value;
@@ -20,7 +20,7 @@ namespace ps1 {
 
     void set_reg(cpu_t* cpu, uint32_t i, uint32_t v) {
         cpu->out_regs[i] = v;
-        cpu->out_regs[0] = 0; // $zero is always zero
+        cpu->out_regs[0] = 0; // * $zero is always zero
     }
 
     uint32_t get_c0reg(cpu_t* cpu, uint32_t i) {
@@ -38,20 +38,36 @@ namespace ps1 {
 }
 
 namespace ps1 {
+    /*
+    * load upper immediate
+    * stores 16 bit immediate value into 16 msb of target register
+    */
     void op_lui(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.b.rt, instr.b.imm16 << 16);
     }
     
+    /*
+    * bitwise or immediate
+    * applies bitwise or operator to target register and immediate value
+    */
     void op_ori(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.b.rt, get_reg(cpu, instr.b.rs) | instr.b.imm16);
     }
 
+    /*
+    * store word
+    * memory aligned store into bus
+    */
     void op_sw(cpu_t* cpu, cpu_instr_t instr) {
         if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
 
         bus_store32(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16), get_reg(cpu, instr.b.rt));
     }
 
+    /*
+    * load word
+    * memory aligned fetch from bus
+    */
     void op_lw(cpu_t* cpu, cpu_instr_t instr) {
         if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
 
@@ -59,45 +75,89 @@ namespace ps1 {
         cpu->load_delay_value = bus_fetch32(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16));
     }
 
+    /*
+    * shift left logical
+    * shifts value to left by n bits
+    * also used as nop (sll $zero, $zero, 0) -> (instr 0x0)
+    */
     void op_ssl(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.a.rt, get_reg(cpu, instr.a.rs) << instr.a.imm5);
     }
 
+    /*
+    * add immediate unsigned
+    * adds sign extended immediate value to register
+    */
     void op_addiu(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, instr.b.rt, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16)); // * not a signed addition
+        set_reg(cpu, instr.b.rt, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16));
     }
 
+    /*
+    * add immediate
+    * must throw and exeption when overflow occurs
+    */
     void op_addi(cpu_t* cpu, cpu_instr_t instr) {
         op_addiu(cpu, instr); // TODO: MUST CHECK FOR OVERFLOW
     }
 
+    /*
+    * add unsigned
+    * adds two registers
+    */
+    void op_addu(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) + get_reg(cpu, instr.a.rt));  // ? MUST CHECK FOR OVERFLOW ?
+    }
+
+    /*
+    * jump
+    * jump within the current 256MB of addressable memory
+    */
     void op_j(cpu_t* cpu, cpu_instr_t instr) {
         cpu->pc = (cpu->pc & 0xF0000000) | (instr.c.imm26 << 2); // * << 2 align with memory
     }
 
+    /*
+    * or
+    * bitwise or two registers
+    */
     void op_or(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) | get_reg(cpu, instr.a.rt));
     }
 
+    /*
+    * move to cop0
+    * move value from cpu reg to cop0 reg
+    */
     void op_mtc0(cpu_t* cpu, cpu_instr_t instr) {
         set_c0reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rt));
     }
 
+    /*
+    * move program counter to new address
+    * aligns offset with memory and then compensates one extra cpu cycle
+    */
     void op_branch(cpu_t* cpu, uint32_t offset) {
         cpu->pc += (offset << 2) - sizeof(cpu_instr_t);
     }
 
+    /*
+    * branch if not equal
+    */
     void op_bne(cpu_t* cpu, cpu_instr_t instr) {
         if (get_reg(cpu, instr.b.rs) != get_reg(cpu, instr.b.rt)) {
             op_branch(cpu, sign_extend_16(instr.b.imm16));
         }
     }
 
+    /*
+    * set on less than unsigned
+    * if left operand register is less then right operand register sets value to 1, otherwise 0
+    */
     void op_sltu(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) < get_reg(cpu, instr.a.rt));
     }
 
-     // handle invalid cpu instruction
+    // handle invalid cpu instruction
     void execute_err(cpu_t* cpu, cpu_instr_t instr) {
         DEBUG_CODE(char err_msg_buffer[64]);
         DEBUG_CODE(
@@ -117,6 +177,7 @@ namespace ps1 {
 
     typedef void(*cpu_instr_handler_func)(cpu_t*, cpu_instr_t);
 
+    // * execute cop0 instruction
     void execute_cop0(cpu_t* cpu, cpu_instr_t instr) {
         if (instr.a.opcode == 0b010000 && instr.a.rs == 0b00100) {
             op_mtc0(cpu, instr);
@@ -125,12 +186,13 @@ namespace ps1 {
         }
     }
 
-     // execute special instruction
+    // * execute special instruction
     void execute_special(cpu_t* cpu, cpu_instr_t instr) {
         static umap_t <cpu_subfunc_t, cpu_instr_handler_func> opmap = {
             { cpu_subfunc_t::SSL, op_ssl },
             { cpu_subfunc_t::OR, op_or },
             { cpu_subfunc_t::SLTU, op_sltu },
+            { cpu_subfunc_t::ADDU, op_addu },
         };
 
         auto subfunc = static_cast <cpu_subfunc_t> (instr.a.subfunc);
@@ -144,7 +206,7 @@ namespace ps1 {
         DEBUG_CODE(execute_err(cpu, instr));
     }
     
-     // execute instruction
+    // * execute instruction
     void execute(cpu_t* cpu, cpu_instr_t instr) {
         static umap_t <cpu_opcode_t, cpu_instr_handler_func> opmap = {
             { cpu_opcode_t::SPECIAL, execute_special },
@@ -174,27 +236,27 @@ namespace ps1 {
 void ps1::cpu_init(cpu_t* cpu, bus_t* bus) {
     cpu->bus = bus;
 
-    // initialize registers to garbage value
+    // * initialize registers to garbage value
     for (int i = 1; i < 32; i++) {
         cpu->in_regs[i] = register_garbage_value;
         cpu->out_regs[i] = register_garbage_value;
         cpu->c0regs[i] = register_garbage_value;
     }
 
-    cpu->in_regs[0] = 0; // $zero is always zero
+    // * $zero is always zero
+    cpu->in_regs[0] = 0;
     cpu->out_regs[0] = 0;
 
     cpu->hi = register_garbage_value;
     cpu->lo = register_garbage_value;
 
-    cpu->pc = BIOS_ENTRY; // start at BIOS main function
+    cpu->pc = BIOS_ENTRY; // * target BIOS entry function
 
     cpu->instr_delay_slot = nop;
     cpu->load_delay_target = 0;
     cpu->load_delay_value = 0;
 
-    // set cop0 status register to 0
-    cpu->c0regs[12] = 0;
+    cpu->c0regs[12] = 0; // * set cop0 status register to 0
 
     cpu_set_state(cpu, cpu_state_t::sleeping);
 
@@ -203,17 +265,19 @@ void ps1::cpu_init(cpu_t* cpu, bus_t* bus) {
 }
 
 void ps1::cpu_tick(cpu_t* cpu) {
-    cpu_instr_t instr = cpu->instr_delay_slot; // fetch instruction from delay slot
-    cpu->instr_delay_slot = bus_fetch32(cpu->bus, cpu->pc); // fetch instruction from memory
+    cpu_instr_t instr = cpu->instr_delay_slot; // * fetch instruction from delay slot
+    cpu->instr_delay_slot = bus_fetch32(cpu->bus, cpu->pc); // * fetch instruction from memory
 
-    cpu->pc += sizeof(cpu_instr_t); // advance program counter
+    cpu->pc += sizeof(cpu_instr_t); // * advance program counter
 
+    // * move value from load delay slot to output register values
     set_reg(cpu, cpu->load_delay_target, cpu->load_delay_value);
     cpu->load_delay_target = 0;
     cpu->load_delay_value = 0;
 
-    execute(cpu, instr); // execute instruction
+    execute(cpu, instr); // * execute next instruction
     
+    // * update reg values
     memcpy(cpu->in_regs, cpu->out_regs, sizeof(cpu_instr_t) * 32);
     
     // ! debug

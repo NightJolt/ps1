@@ -16,11 +16,12 @@ int main() {
 
     ps1::cpu_init(&cpu, &bus);
 
+    // ? use memory region masking instead ?
+
     ps1::bios_t bios;
     ps1::bios_init(&bios, "../bios/SCPH1001.bin");
     ps1::device_info_t bios_info;
     bios_info.device = &bios;
-    bios_info.mem_range = { ps1::BIOS_KSEG1, ps1::BIOS_SIZE };
     bios_info.fetch32 = ps1::bios_fetch32;
     bios_info.store32 = ps1::bios_store32;
 
@@ -28,28 +29,37 @@ int main() {
     ps1::ram_init(&ram);
     ps1::device_info_t ram_info;
     ram_info.device = &bios;
-    ram_info.mem_range = { ps1::RAM_KSEG1, ps1::RAM_SIZE };
     ram_info.fetch32 = ps1::ram_fetch32;
     ram_info.store32 = ps1::ram_store32;
 
     ps1::hardreg_t hardreg;
     ps1::device_info_t hardreg_info;
     hardreg_info.device = &hardreg;
-    hardreg_info.mem_range = { ps1::HARDREG_KUSEG, ps1::HARDREG_SIZE };
     hardreg_info.fetch32 = ps1::hardreg_fetch32;
     hardreg_info.store32 = ps1::hardreg_store32;
 
     ps1::nodevice_t nodevice;
     ps1::device_info_t nodevice_info;
     nodevice_info.device = &nodevice;
-    nodevice_info.mem_range = { 0xFFFE0130, 4 };
     nodevice_info.fetch32 = ps1::nodevice_fetch32;
     nodevice_info.store32 = ps1::nodevice_store32;
 
-    ps1::bus_connect(&bus, bios_info);
-    ps1::bus_connect(&bus, ram_info);
-    ps1::bus_connect(&bus, hardreg_info);
-    ps1::bus_connect(&bus, nodevice_info);
+    {
+        bios_info.mem_range = { ps1::BIOS_KSEG1, ps1::BIOS_SIZE };
+        ps1::bus_connect(&bus, bios_info);
+
+        ram_info.mem_range = { ps1::RAM_KUSEG, ps1::RAM_SIZE };
+        ps1::bus_connect(&bus, ram_info);
+
+        ram_info.mem_range = { ps1::RAM_KSEG1, ps1::RAM_SIZE };
+        ps1::bus_connect(&bus, ram_info);
+
+        hardreg_info.mem_range = { ps1::HARDREG_KUSEG, ps1::HARDREG_SIZE };
+        ps1::bus_connect(&bus, hardreg_info);
+
+        nodevice_info.mem_range = { 0xFFFE0130, 4 };
+        ps1::bus_connect(&bus, nodevice_info);
+    }
 
     ps1::render::init();
 
