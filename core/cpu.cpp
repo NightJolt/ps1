@@ -56,7 +56,7 @@ namespace ps1 {
 
     /*
     * store word
-    * memory aligned store into bus
+    * 32 bit memory aligned store into bus
     */
     void op_sw(cpu_t* cpu, cpu_instr_t instr) {
         if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
@@ -65,8 +65,18 @@ namespace ps1 {
     }
 
     /*
+    * store halfword
+    * 16 bit memory aligned store into bus
+    */
+    void op_sh(cpu_t* cpu, cpu_instr_t instr) {
+        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
+
+        bus_store16(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16), get_reg(cpu, instr.b.rt));
+    }
+
+    /*
     * load word
-    * memory aligned fetch from bus
+    * 32 bit memory aligned fetch from bus
     */
     void op_lw(cpu_t* cpu, cpu_instr_t instr) {
         if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
@@ -213,6 +223,7 @@ namespace ps1 {
             { cpu_opcode_t::LUI, op_lui },
             { cpu_opcode_t::ORI, op_ori },
             { cpu_opcode_t::SW, op_sw },
+            { cpu_opcode_t::SH, op_sh },
             { cpu_opcode_t::LW, op_lw },
             { cpu_opcode_t::ADDIU, op_addiu },
             { cpu_opcode_t::ADDI, op_addi },
@@ -282,6 +293,12 @@ void ps1::cpu_tick(cpu_t* cpu) {
     
     // ! debug
     cpu->instr_exec_cnt++;
+
+    // ! debug breakpoints
+    {
+        // if (cpu->in_regs[29] == 2149580520) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
+        // if (cpu->instr_exec_cnt == 17367) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
+    }
 }
 
 void ps1::cpu_set_state(cpu_t* cpu, cpu_state_t cpu_state) {

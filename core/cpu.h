@@ -40,6 +40,7 @@ namespace ps1 {
         LUI = 0b001111,
         ORI = 0b001101,
         SW = 0b101011,
+        SH = 0b101001,
         LW = 0b100011,
         ADDIU = 0b001001,
         ADDI = 0b001000,

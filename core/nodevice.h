@@ -9,4 +9,5 @@ namespace ps1 {
 
     uint32_t nodevice_fetch32(void*, mem_addr_t);
     void nodevice_store32(void*, mem_addr_t, uint32_t);
+    void nodevice_store16(void*, mem_addr_t, uint16_t);
 }
