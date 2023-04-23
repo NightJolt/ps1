@@ -37,9 +37,23 @@ void ps1::bus_store16(bus_t* bus, mem_addr_t mem_addr, uint16_t data) {
     
     for (auto& device_info : bus->devices) {
         if (device_info.mem_range.contains(mem_addr)) {
-            ASSERT(device_info.store16, "16 bit mode store is not implemented on device");
+            ASSERT(device_info.store16, "16 bit mode store is not implemented on this device");
 
             device_info.store16(device_info.device, device_info.mem_range.offset(mem_addr), data);
+
+            return;
+        }
+    }
+
+    ASSERT(false, "Unmapped memory address");
+}
+
+void ps1::bus_store8(bus_t* bus, mem_addr_t mem_addr, uint8_t data) {
+    for (auto& device_info : bus->devices) {
+        if (device_info.mem_range.contains(mem_addr)) {
+            ASSERT(device_info.store8, "8 bit mode store is not implemented on this device");
+
+            device_info.store8(device_info.device, device_info.mem_range.offset(mem_addr), data);
 
             return;
         }

@@ -44,6 +44,7 @@ int main() {
     nodevice_info.fetch32 = ps1::nodevice_fetch32;
     nodevice_info.store32 = ps1::nodevice_store32;
     nodevice_info.store16 = ps1::nodevice_store16;
+    nodevice_info.store8 = ps1::nodevice_store8;
 
     {
         // * important to map nodevices first to override subregions
@@ -53,6 +54,10 @@ int main() {
 
             // * PSU memory region
             nodevice_info.mem_range = { 0x1F801C00, 0x1F801E80 - 0x1F801C00 };
+            ps1::bus_connect(&bus, nodevice_info);
+
+            // * Expansion 2 memory region
+            nodevice_info.mem_range = { 0x1F802000, 0x1F802042 - 0x1F802000 };
             ps1::bus_connect(&bus, nodevice_info);
         }
 

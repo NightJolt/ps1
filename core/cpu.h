@@ -38,13 +38,16 @@ namespace ps1 {
     enum struct cpu_opcode_t {
         SPECIAL = 0b000000,
         LUI = 0b001111,
+        ANDI = 0b001100,
         ORI = 0b001101,
         SW = 0b101011,
         SH = 0b101001,
+        SB = 0b101000,
         LW = 0b100011,
         ADDIU = 0b001001,
         ADDI = 0b001000,
         J = 0b000010,
+        JAL = 0b000011,
         BNE = 0b000101,
         COP = 0b010000,
     };
@@ -54,6 +57,7 @@ namespace ps1 {
         OR = 0b100101,
         SLTU = 0b101011,
         ADDU = 0b100001,
+        JR = 0b001000,
     };
 
     enum struct cpu_state_t {

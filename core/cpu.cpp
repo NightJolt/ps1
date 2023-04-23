@@ -47,6 +47,14 @@ namespace ps1 {
     }
     
     /*
+    * bitwise and immediate
+    * applies bitwise and operator to target register and immediate value
+    */
+    void op_andi(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.b.rt, get_reg(cpu, instr.b.rs) & instr.b.imm16);
+    }
+    
+    /*
     * bitwise or immediate
     * applies bitwise or operator to target register and immediate value
     */
@@ -72,6 +80,16 @@ namespace ps1 {
         if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
 
         bus_store16(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16), get_reg(cpu, instr.b.rt));
+    }
+
+    /*
+    * store byte
+    * 8 bit store into bus
+    */
+    void op_sb(cpu_t* cpu, cpu_instr_t instr) {
+        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
+
+        bus_store8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16), get_reg(cpu, instr.b.rt));
     }
 
     /*
@@ -167,6 +185,26 @@ namespace ps1 {
         set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) < get_reg(cpu, instr.a.rt));
     }
 
+    /*
+    * jump and link
+    * jumps and stores current pc into reg 31 ($ra)
+    * used to call functions
+    */
+    void op_jal(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, 31, cpu->pc);
+
+        op_j(cpu, instr);
+    }
+
+    /*
+    * jump register
+    * jumps to and address stored in register
+    * used as a return from function
+    */
+    void op_jr(cpu_t* cpu, cpu_instr_t instr) {
+        cpu->pc = get_reg(cpu, instr.a.rs);
+    }
+
     // handle invalid cpu instruction
     void execute_err(cpu_t* cpu, cpu_instr_t instr) {
         DEBUG_CODE(char err_msg_buffer[64]);
@@ -203,6 +241,7 @@ namespace ps1 {
             { cpu_subfunc_t::OR, op_or },
             { cpu_subfunc_t::SLTU, op_sltu },
             { cpu_subfunc_t::ADDU, op_addu },
+            { cpu_subfunc_t::JR, op_jr },
         };
 
         auto subfunc = static_cast <cpu_subfunc_t> (instr.a.subfunc);
@@ -221,13 +260,16 @@ namespace ps1 {
         static umap_t <cpu_opcode_t, cpu_instr_handler_func> opmap = {
             { cpu_opcode_t::SPECIAL, execute_special },
             { cpu_opcode_t::LUI, op_lui },
+            { cpu_opcode_t::ANDI, op_andi },
             { cpu_opcode_t::ORI, op_ori },
             { cpu_opcode_t::SW, op_sw },
             { cpu_opcode_t::SH, op_sh },
+            { cpu_opcode_t::SB, op_sb },
             { cpu_opcode_t::LW, op_lw },
             { cpu_opcode_t::ADDIU, op_addiu },
             { cpu_opcode_t::ADDI, op_addi },
             { cpu_opcode_t::J, op_j },
+            { cpu_opcode_t::JAL, op_jal },
             { cpu_opcode_t::BNE, op_bne },
             { cpu_opcode_t::COP, execute_cop0 },
         };
