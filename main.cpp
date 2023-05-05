@@ -23,6 +23,7 @@ int main() {
     ps1::device_info_t bios_info;
     bios_info.device = &bios;
     bios_info.fetch32 = ps1::bios_fetch32;
+    bios_info.fetch8 = ps1::bios_fetch8;
     bios_info.store32 = ps1::bios_store32;
 
     ps1::ram_t ram;
@@ -42,6 +43,8 @@ int main() {
     ps1::device_info_t nodevice_info;
     nodevice_info.device = &nodevice;
     nodevice_info.fetch32 = ps1::nodevice_fetch32;
+    nodevice_info.fetch16 = ps1::nodevice_fetch16;
+    nodevice_info.fetch8 = ps1::nodevice_fetch8;
     nodevice_info.store32 = ps1::nodevice_store32;
     nodevice_info.store16 = ps1::nodevice_store16;
     nodevice_info.store8 = ps1::nodevice_store8;

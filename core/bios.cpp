@@ -26,6 +26,10 @@ uint32_t ps1::bios_fetch32(void* bios, mem_addr_t offset) {
     return *(uint32_t*)(((bios_t*)bios)->data + offset); // ! faster but not portable
 }
 
+uint8_t ps1::bios_fetch8(void* bios, mem_addr_t offset) {
+    return *(uint8_t*)(((bios_t*)bios)->data + offset);
+}
+
 void ps1::bios_store32(void* bios, mem_addr_t offset, uint32_t value) {
     ASSERT(false, "BIOS is read-only");
 }

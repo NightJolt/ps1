@@ -44,6 +44,7 @@ namespace ps1 {
         SH = 0b101001,
         SB = 0b101000,
         LW = 0b100011,
+        LB = 0b100000,
         ADDIU = 0b001001,
         ADDI = 0b001000,
         J = 0b000010,

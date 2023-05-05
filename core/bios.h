@@ -12,5 +12,6 @@ namespace ps1 {
     void bios_del(bios_t*);
 
     uint32_t bios_fetch32(void*, mem_addr_t);
+    uint8_t bios_fetch8(void*, mem_addr_t);
     void bios_store32(void*, mem_addr_t, uint32_t);
 }

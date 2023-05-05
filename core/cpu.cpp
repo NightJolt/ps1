@@ -11,6 +11,10 @@ namespace ps1 {
     uint32_t sign_extend_16(uint32_t value) {
         return (uint32_t)(int16_t)value;
     }
+
+    uint32_t sign_extend_8(uint32_t value) {
+        return (uint32_t)(int8_t)value;
+    }
 }
 
 namespace ps1 {
@@ -97,10 +101,17 @@ namespace ps1 {
     * 32 bit memory aligned fetch from bus
     */
     void op_lw(cpu_t* cpu, cpu_instr_t instr) {
-        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
-
         cpu->load_delay_target = instr.b.rt;
         cpu->load_delay_value = bus_fetch32(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16));
+    }
+
+    /*
+    * load byte
+    * 8 bit fetch from bus
+    */
+    void op_lb(cpu_t* cpu, cpu_instr_t instr) {
+        cpu->load_delay_target = instr.b.rt;
+        cpu->load_delay_value = sign_extend_8(bus_fetch8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16)));
     }
 
     /*
@@ -266,6 +277,7 @@ namespace ps1 {
             { cpu_opcode_t::SH, op_sh },
             { cpu_opcode_t::SB, op_sb },
             { cpu_opcode_t::LW, op_lw },
+            { cpu_opcode_t::LB, op_lb },
             { cpu_opcode_t::ADDIU, op_addiu },
             { cpu_opcode_t::ADDI, op_addi },
             { cpu_opcode_t::J, op_j },
