@@ -50,6 +50,7 @@ namespace ps1 {
         J = 0b000010,
         JAL = 0b000011,
         BNE = 0b000101,
+        BEQ = 0b000100,
         COP = 0b010000,
     };
 

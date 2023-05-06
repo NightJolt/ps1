@@ -69,6 +69,8 @@ namespace ps1 {
     constexpr uint32_t RAM_SIZE = 2048 * 1024;
 
     constexpr uint32_t EXPANSION1_KUSEG = 0x1F000000;
+    constexpr uint32_t EXPANSION1_SIZE = 8 * 1024 * 1024;
+    
     constexpr uint32_t EXPANSION2_KUSEG = 0x1F802000;
 
     constexpr uint32_t SCRATCHPAD_KUSEG = 0x1F800000;

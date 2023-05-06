@@ -5,6 +5,7 @@
 #include "hardreg.h"
 #include "ram.h"
 #include "nodevice.h"
+#include "expansion.h"
 
 #include "render.h"
 #include "logger.h"
@@ -19,7 +20,7 @@ int main() {
     // ? use memory region masking instead ?
 
     ps1::bios_t bios;
-    ps1::bios_init(&bios, "../bios/SCPH1001.bin");
+    ps1::bios_init(&bios, "../bios/SCPH1001.bin"); 
     ps1::device_info_t bios_info;
     bios_info.device = &bios;
     bios_info.fetch32 = ps1::bios_fetch32;
@@ -39,6 +40,11 @@ int main() {
     hardreg_info.fetch32 = ps1::hardreg_fetch32;
     hardreg_info.store32 = ps1::hardreg_store32;
 
+    ps1::expansion_t expansion;
+    ps1::device_info_t expansion_info;
+    expansion_info.device = &expansion;
+    expansion_info.fetch8 = ps1::expansion_fetch8;
+
     ps1::nodevice_t nodevice;
     ps1::device_info_t nodevice_info;
     nodevice_info.device = &nodevice;
@@ -52,14 +58,15 @@ int main() {
     {
         // * important to map nodevices first to override subregions
         {
+            // * Cache control registers
             nodevice_info.mem_range = { 0xFFFE0130, 4 };
             ps1::bus_connect(&bus, nodevice_info);
 
-            // * PSU memory region
+            // * SPU memory region
             nodevice_info.mem_range = { 0x1F801C00, 0x1F801E80 - 0x1F801C00 };
             ps1::bus_connect(&bus, nodevice_info);
 
-            // * Expansion 2 memory region
+            // * Expansion 2 memory region. Used for debugging
             nodevice_info.mem_range = { 0x1F802000, 0x1F802042 - 0x1F802000 };
             ps1::bus_connect(&bus, nodevice_info);
         }
@@ -78,6 +85,9 @@ int main() {
 
         hardreg_info.mem_range = { ps1::HARDREG_KUSEG, ps1::HARDREG_SIZE };
         ps1::bus_connect(&bus, hardreg_info);
+
+        expansion_info.mem_range = { ps1::EXPANSION1_KUSEG, ps1::EXPANSION1_SIZE };
+        ps1::bus_connect(&bus, expansion_info);
     }
 
     ps1::render::init();

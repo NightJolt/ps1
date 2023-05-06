@@ -175,7 +175,7 @@ namespace ps1 {
     * move program counter to new address
     * aligns offset with memory and then compensates one extra cpu cycle
     */
-    void op_branch(cpu_t* cpu, uint32_t offset) {
+    void cpu_branch(cpu_t* cpu, uint32_t offset) {
         cpu->pc += (offset << 2) - sizeof(cpu_instr_t);
     }
 
@@ -184,7 +184,16 @@ namespace ps1 {
     */
     void op_bne(cpu_t* cpu, cpu_instr_t instr) {
         if (get_reg(cpu, instr.b.rs) != get_reg(cpu, instr.b.rt)) {
-            op_branch(cpu, sign_extend_16(instr.b.imm16));
+            cpu_branch(cpu, sign_extend_16(instr.b.imm16));
+        }
+    }
+
+    /*
+    * branch if equal
+    */
+    void op_beq(cpu_t* cpu, cpu_instr_t instr) {
+        if (get_reg(cpu, instr.b.rs) == get_reg(cpu, instr.b.rt)) {
+            cpu_branch(cpu, sign_extend_16(instr.b.imm16));
         }
     }
 
@@ -283,6 +292,7 @@ namespace ps1 {
             { cpu_opcode_t::J, op_j },
             { cpu_opcode_t::JAL, op_jal },
             { cpu_opcode_t::BNE, op_bne },
+            { cpu_opcode_t::BEQ, op_beq },
             { cpu_opcode_t::COP, execute_cop0 },
         };
 
