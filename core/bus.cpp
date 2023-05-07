@@ -68,7 +68,7 @@ void ps1::bus_store32(bus_t* bus, mem_addr_t mem_addr, uint32_t data) {
 
 void ps1::bus_store16(bus_t* bus, mem_addr_t mem_addr, uint16_t data) {
     ASSERT(mem_addr % 2 == 0, "Unaligned memory access");
-    
+
     for (auto& device_info : bus->devices) {
         if (device_info.mem_range.contains(mem_addr)) {
             ASSERT(device_info.store16, "16 bit mode store is not implemented on this device");

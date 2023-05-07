@@ -11,6 +11,20 @@
 #include "logger.h"
 #include "debugger.h"
 
+#define SETUP_FETCH(type, info)\
+    info.fetch32 = ps1::fetch<type, uint32_t>;\
+    info.fetch16 = ps1::fetch<type, uint16_t>;\
+    info.fetch8 = ps1::fetch<type, uint8_t>;
+
+#define SETUP_STORE(type, info)\
+    info.store32 = ps1::store<type, uint32_t>;\
+    info.store16 = ps1::store<type, uint16_t>;\
+    info.store8 = ps1::store<type, uint8_t>;
+
+#define SETUP_STORE_FETCH(type, info)\
+    SETUP_FETCH(type, info);\
+    SETUP_STORE(type, info);
+
 int main() {
     ps1::bus_t bus;
     ps1::cpu_t cpu;
@@ -23,16 +37,13 @@ int main() {
     ps1::bios_init(&bios, "../bios/SCPH1001.bin"); 
     ps1::device_info_t bios_info;
     bios_info.device = &bios;
-    bios_info.fetch32 = ps1::bios_fetch32;
-    bios_info.fetch8 = ps1::bios_fetch8;
-    bios_info.store32 = ps1::bios_store32;
+    SETUP_FETCH(ps1::bios_t, bios_info);
 
     ps1::ram_t ram;
     ps1::ram_init(&ram);
     ps1::device_info_t ram_info;
     ram_info.device = &ram;
-    ram_info.fetch32 = ps1::ram_fetch32;
-    ram_info.store32 = ps1::ram_store32;
+    SETUP_STORE_FETCH(ps1::ram_t, ram_info);
 
     ps1::hardreg_t hardreg;
     ps1::device_info_t hardreg_info;
@@ -48,12 +59,7 @@ int main() {
     ps1::nodevice_t nodevice;
     ps1::device_info_t nodevice_info;
     nodevice_info.device = &nodevice;
-    nodevice_info.fetch32 = ps1::nodevice_fetch32;
-    nodevice_info.fetch16 = ps1::nodevice_fetch16;
-    nodevice_info.fetch8 = ps1::nodevice_fetch8;
-    nodevice_info.store32 = ps1::nodevice_store32;
-    nodevice_info.store16 = ps1::nodevice_store16;
-    nodevice_info.store8 = ps1::nodevice_store8;
+    SETUP_STORE_FETCH(ps1::nodevice_t, nodevice_info);
 
     {
         // * important to map nodevices first to override subregions
@@ -68,6 +74,10 @@ int main() {
 
             // * Expansion 2 memory region. Used for debugging
             nodevice_info.mem_range = { 0x1F802000, 0x1F802042 - 0x1F802000 };
+            ps1::bus_connect(&bus, nodevice_info);
+
+            // * Interrupt control registers. Not yet needed
+            nodevice_info.mem_range = { 0x1F801070, 8 };
             ps1::bus_connect(&bus, nodevice_info);
         }
 

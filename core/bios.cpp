@@ -14,22 +14,13 @@ void ps1::bios_del(bios_t* bios) {
     delete[] bios->data;
 }
 
-uint32_t ps1::bios_fetch32(void* bios, mem_addr_t offset) {
-    // uint32_t data32 = 0;
+// ! more portable way
+// uint32_t ps1::bios_fetch32(void* bios, mem_addr_t offset) {
+//     uint32_t data32 = 0;
 
-    // for (int i = 0; i < sizeof uint32_t; i++) {
-    //     data32 |= bios->data[offset + i] << (i << 3);
-    // }
+//     for (int i = 0; i < sizeof uint32_t; i++) {
+//         data32 |= bios->data[offset + i] << (i << 3);
+//     }
 
-    // return data32;
-
-    return *(uint32_t*)(((bios_t*)bios)->data + offset); // ! faster but not portable
-}
-
-uint8_t ps1::bios_fetch8(void* bios, mem_addr_t offset) {
-    return *(uint8_t*)(((bios_t*)bios)->data + offset);
-}
-
-void ps1::bios_store32(void* bios, mem_addr_t offset, uint32_t value) {
-    ASSERT(false, "BIOS is read-only");
-}
+//     return data32;
+// }

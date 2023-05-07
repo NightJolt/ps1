@@ -27,6 +27,11 @@ namespace ps1 {
         cpu->out_regs[0] = 0; // * $zero is always zero
     }
 
+    void set_reg_delayed(cpu_t* cpu, uint32_t i, uint32_t v) {
+        cpu->load_delay_target = i;
+        cpu->load_delay_value = v;
+    }
+
     uint32_t get_c0reg(cpu_t* cpu, uint32_t i) {
         return cpu->c0regs[i];
     }
@@ -101,8 +106,7 @@ namespace ps1 {
     * 32 bit memory aligned fetch from bus
     */
     void op_lw(cpu_t* cpu, cpu_instr_t instr) {
-        cpu->load_delay_target = instr.b.rt;
-        cpu->load_delay_value = bus_fetch32(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16));
+        set_reg_delayed(cpu, instr.b.rt, bus_fetch32(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16)));
     }
 
     /*
@@ -110,8 +114,7 @@ namespace ps1 {
     * 8 bit fetch from bus
     */
     void op_lb(cpu_t* cpu, cpu_instr_t instr) {
-        cpu->load_delay_target = instr.b.rt;
-        cpu->load_delay_value = sign_extend_8(bus_fetch8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16)));
+        set_reg_delayed(cpu, instr.b.rt, sign_extend_8(bus_fetch8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16))));
     }
 
     /*
@@ -133,6 +136,7 @@ namespace ps1 {
 
     /*
     * add immediate
+    * adds sign extended immediate value to register
     * must throw and exeption when overflow occurs
     */
     void op_addi(cpu_t* cpu, cpu_instr_t instr) {
@@ -144,7 +148,16 @@ namespace ps1 {
     * adds two registers
     */
     void op_addu(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) + get_reg(cpu, instr.a.rt));  // ? MUST CHECK FOR OVERFLOW ?
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) + get_reg(cpu, instr.a.rt));
+    }
+
+    /*
+    * add unsigned
+    * adds two registers
+    * must throw and exeption when overflow occurs
+    */
+    void op_add(cpu_t* cpu, cpu_instr_t instr) {
+        op_addu(cpu, instr); // TODO: MUST CHECK FOR OVERFLOW
     }
 
     /*
@@ -164,11 +177,29 @@ namespace ps1 {
     }
 
     /*
+    * and
+    * bitwise and two registers
+    */
+    void op_and(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) & get_reg(cpu, instr.a.rt));
+    }
+
+    /*
     * move to cop0
     * move value from cpu reg to cop0 reg
     */
     void op_mtc0(cpu_t* cpu, cpu_instr_t instr) {
         set_c0reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rt));
+    }
+
+    /*
+    * move from cop0
+    * move value from cop0 reg to cpu reg
+    */
+    void op_mfc0(cpu_t* cpu, cpu_instr_t instr) {
+        ASSERT(instr.a.rd == 12, "only cop0 reg 12 is implemented");
+
+        set_reg_delayed(cpu, instr.a.rt, get_c0reg(cpu, instr.a.rd));
     }
 
     /*
@@ -249,6 +280,9 @@ namespace ps1 {
     void execute_cop0(cpu_t* cpu, cpu_instr_t instr) {
         if (instr.a.opcode == 0b010000 && instr.a.rs == 0b00100) {
             op_mtc0(cpu, instr);
+        } else
+        if (instr.a.opcode == 0b010000 && instr.a.rs == 0b00000) {
+            op_mfc0(cpu, instr);
         } else {
             DEBUG_CODE(execute_err(cpu, instr));
         }
@@ -259,8 +293,10 @@ namespace ps1 {
         static umap_t <cpu_subfunc_t, cpu_instr_handler_func> opmap = {
             { cpu_subfunc_t::SSL, op_ssl },
             { cpu_subfunc_t::OR, op_or },
+            { cpu_subfunc_t::AND, op_and },
             { cpu_subfunc_t::SLTU, op_sltu },
             { cpu_subfunc_t::ADDU, op_addu },
+            { cpu_subfunc_t::ADD, op_add },
             { cpu_subfunc_t::JR, op_jr },
         };
 
@@ -328,8 +364,7 @@ void ps1::cpu_init(cpu_t* cpu, bus_t* bus) {
     cpu->pc = BIOS_ENTRY; // * target BIOS entry function
 
     cpu->instr_delay_slot = nop;
-    cpu->load_delay_target = 0;
-    cpu->load_delay_value = 0;
+    set_reg_delayed(cpu, 0, 0);
 
     cpu->c0regs[12] = 0; // * set cop0 status register to 0
 
@@ -347,8 +382,7 @@ void ps1::cpu_tick(cpu_t* cpu) {
 
     // * move value from load delay slot to output register values
     set_reg(cpu, cpu->load_delay_target, cpu->load_delay_value);
-    cpu->load_delay_target = 0;
-    cpu->load_delay_value = 0;
+    set_reg_delayed(cpu, 0, 0);
 
     execute(cpu, instr); // * execute next instruction
     
@@ -361,7 +395,8 @@ void ps1::cpu_tick(cpu_t* cpu) {
     // ! debug breakpoints
     {
         // if (cpu->in_regs[29] == 2149580520) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
-        // if (cpu->instr_exec_cnt == 17367) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
+        // if (cpu->instr_exec_cnt == 79285) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
+        // if (cpu->instr_exec_cnt == 79310) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
     }
 }
 

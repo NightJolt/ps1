@@ -57,8 +57,10 @@ namespace ps1 {
     enum struct cpu_subfunc_t {
         SSL = 0b000000,
         OR = 0b100101,
+        AND = 0b100100,
         SLTU = 0b101011,
         ADDU = 0b100001,
+        ADD = 0b100000,
         JR = 0b001000,
     };
 
