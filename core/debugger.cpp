@@ -85,6 +85,43 @@ namespace ps1 {
         ImGui::TableNextColumn();
         ImGui::TextWrapped(dec_buffer);
     }
+    
+    str_t describe_reg(uint32_t i) {
+        if (i == 0) return "($zero)";
+        if (i == 1) return "($at)";
+        if (i == 2) return "($v0)";
+        if (i == 3) return "($v1)";
+        if (i == 4) return "($a0)";
+        if (i == 5) return "($a1)";
+        if (i == 6) return "($a2)";
+        if (i == 7) return "($a3)";
+        if (i == 8) return "($t0)";
+        if (i == 9) return "($t1)";
+        if (i == 10) return "($t2)";
+        if (i == 11) return "($t3)";
+        if (i == 12) return "($t4)";
+        if (i == 13) return "($t5)";
+        if (i == 14) return "($t6)";
+        if (i == 15) return "($t7)";
+        if (i == 16) return "($s0)";
+        if (i == 17) return "($s1)";
+        if (i == 18) return "($s2)";
+        if (i == 19) return "($s3)";
+        if (i == 20) return "($s4)";
+        if (i == 21) return "($s5)";
+        if (i == 22) return "($s6)";
+        if (i == 23) return "($s7)";
+        if (i == 24) return "($t8)";
+        if (i == 25) return "($t9)";
+        if (i == 26) return "($k0)";
+        if (i == 27) return "($k1)";
+        if (i == 28) return "($gp)";
+        if (i == 29) return "($sp)";
+        if (i == 30) return "($fp)";
+        if (i == 31) return "($ra)";
+
+        return "";
+    }
 }
 
 void ps1::debugger::display_cpu_info(cpu_t* cpu) {
@@ -206,12 +243,12 @@ void ps1::debugger::display_cpu_info(cpu_t* cpu) {
             }
 
             if (ImGui::BeginTable("regs", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
-                ImGui::TableSetupColumn(nullptr, 0, 1);
+                ImGui::TableSetupColumn(nullptr, 0, 2);
                 ImGui::TableSetupColumn(nullptr, 0, 3);
                 ImGui::TableSetupColumn(nullptr, 0, 3);
                 
                 for (int i = 0; i < 32; i++) {
-                    display_reg("R" + std::to_string(i), cpu->in_regs[i]);
+                    display_reg("R" + std::to_string(i) + " " + describe_reg(i), cpu->in_regs[i]);
                 }
                 
                 ImGui::EndTable();

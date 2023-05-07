@@ -122,8 +122,8 @@ namespace ps1 {
     * shifts value to left by n bits
     * also used as nop (sll $zero, $zero, 0) -> (instr 0x0)
     */
-    void op_ssl(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, instr.a.rt, get_reg(cpu, instr.a.rs) << instr.a.imm5);
+    void op_sll(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rt) << instr.a.imm5);
     }
 
     /*
@@ -291,7 +291,7 @@ namespace ps1 {
     // * execute special instruction
     void execute_special(cpu_t* cpu, cpu_instr_t instr) {
         static umap_t <cpu_subfunc_t, cpu_instr_handler_func> opmap = {
-            { cpu_subfunc_t::SSL, op_ssl },
+            { cpu_subfunc_t::SLL, op_sll },
             { cpu_subfunc_t::OR, op_or },
             { cpu_subfunc_t::AND, op_and },
             { cpu_subfunc_t::SLTU, op_sltu },
@@ -394,7 +394,12 @@ void ps1::cpu_tick(cpu_t* cpu) {
 
     // ! debug breakpoints
     {
-        // if (cpu->in_regs[29] == 2149580520) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
+        // if (cpu->pc < BIOS_ENTRY) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
+        // if (cpu->instr_exec_cnt == 71540) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
+        // if (cpu->pc == 0x000005bc) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
+        // if (cpu->pc == 0xbfc06850) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping); // * A0 write
+        // if (cpu->pc == 0xbfc06858) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
+        // if (cpu->pc == 0x600) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
         // if (cpu->instr_exec_cnt == 79285) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
         // if (cpu->instr_exec_cnt == 79310) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
     }
