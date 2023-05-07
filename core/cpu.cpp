@@ -118,6 +118,14 @@ namespace ps1 {
     }
 
     /*
+    * load byte unsigned
+    * 8 bit fetch from bus
+    */
+    void op_lbu(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg_delayed(cpu, instr.b.rt, bus_fetch8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16)));
+    }
+
+    /*
     * shift left logical
     * shifts value to left by n bits
     * also used as nop (sll $zero, $zero, 0) -> (instr 0x0)
@@ -229,6 +237,24 @@ namespace ps1 {
     }
 
     /*
+    * branch if greater than zero
+    */
+    void op_bgtz(cpu_t* cpu, cpu_instr_t instr) {
+        if (get_reg(cpu, instr.b.rs) > 0) {
+            cpu_branch(cpu, sign_extend_16(instr.b.imm16));
+        }
+    }
+
+    /*
+    * branch if less or equal to zero
+    */
+    void op_blez(cpu_t* cpu, cpu_instr_t instr) {
+        if (get_reg(cpu, instr.b.rs) <= 0) {
+            cpu_branch(cpu, sign_extend_16(instr.b.imm16));
+        }
+    }
+
+    /*
     * set on less than unsigned
     * if left operand register is less then right operand register sets value to 1, otherwise 0
     */
@@ -253,6 +279,17 @@ namespace ps1 {
     * used as a return from function
     */
     void op_jr(cpu_t* cpu, cpu_instr_t instr) {
+        cpu->pc = get_reg(cpu, instr.a.rs);
+    }
+
+    /*
+    * jump and link register
+    * jumps to and address stored in register
+    * stores current pc into register
+    */
+    void op_jalr(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, cpu->pc);
+
         cpu->pc = get_reg(cpu, instr.a.rs);
     }
 
@@ -298,6 +335,7 @@ namespace ps1 {
             { cpu_subfunc_t::ADDU, op_addu },
             { cpu_subfunc_t::ADD, op_add },
             { cpu_subfunc_t::JR, op_jr },
+            { cpu_subfunc_t::JALR, op_jalr },
         };
 
         auto subfunc = static_cast <cpu_subfunc_t> (instr.a.subfunc);
@@ -323,12 +361,15 @@ namespace ps1 {
             { cpu_opcode_t::SB, op_sb },
             { cpu_opcode_t::LW, op_lw },
             { cpu_opcode_t::LB, op_lb },
+            { cpu_opcode_t::LBU, op_lbu },
             { cpu_opcode_t::ADDIU, op_addiu },
             { cpu_opcode_t::ADDI, op_addi },
             { cpu_opcode_t::J, op_j },
             { cpu_opcode_t::JAL, op_jal },
             { cpu_opcode_t::BNE, op_bne },
             { cpu_opcode_t::BEQ, op_beq },
+            { cpu_opcode_t::BGTZ, op_bgtz },
+            { cpu_opcode_t::BLEZ, op_blez },
             { cpu_opcode_t::COP, execute_cop0 },
         };
 

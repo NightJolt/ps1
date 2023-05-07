@@ -45,12 +45,15 @@ namespace ps1 {
         SB = 0b101000,
         LW = 0b100011,
         LB = 0b100000,
+        LBU = 0b100100,
         ADDIU = 0b001001,
         ADDI = 0b001000,
         J = 0b000010,
         JAL = 0b000011,
         BNE = 0b000101,
         BEQ = 0b000100,
+        BGTZ = 0b000111,
+        BLEZ = 0b000110,
         COP = 0b010000,
     };
 
@@ -62,6 +65,7 @@ namespace ps1 {
         ADDU = 0b100001,
         ADD = 0b100000,
         JR = 0b001000,
+        JALR = 0b001001,
     };
 
     enum struct cpu_state_t {
