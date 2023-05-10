@@ -1,5 +1,6 @@
 # Resources
 
+- [R3000](https://cgi.cse.unsw.edu.au/~cs3231/doc/R3000.pdf)
 - [The Guide (PDF)](https://github.com/simias/psx-guide/files/121531/guide.zip)
 - [Nocash Specs](http://problemkaputt.de/psx-spx.htm)
 - [PSCX-Redux](https://github.com/grumpycoders/pcsx-redux)

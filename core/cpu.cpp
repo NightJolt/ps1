@@ -135,6 +135,14 @@ namespace ps1 {
     }
 
     /*
+    * shift right logical
+    * does not preserve sign bit
+    */
+    void op_srl(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rt) >> instr.a.imm5);
+    }
+
+    /*
     * shift right arithmetic
     * preserves sign bit
     */
@@ -154,9 +162,10 @@ namespace ps1 {
     * add immediate
     * adds sign extended immediate value to register
     * must throw and exeption when overflow occurs
+    TODO: MUST CHECK FOR OVERFLOW
     */
     void op_addi(cpu_t* cpu, cpu_instr_t instr) {
-        op_addiu(cpu, instr); // TODO: MUST CHECK FOR OVERFLOW
+        op_addiu(cpu, instr);
     }
 
     /*
@@ -171,9 +180,10 @@ namespace ps1 {
     * add unsigned
     * adds two registers
     * must throw and exeption when overflow occurs
+    TODO: MUST CHECK FOR OVERFLOW
     */
     void op_add(cpu_t* cpu, cpu_instr_t instr) {
-        op_addu(cpu, instr); // TODO: MUST CHECK FOR OVERFLOW
+        op_addu(cpu, instr);
     }
 
     /*
@@ -288,7 +298,23 @@ namespace ps1 {
     * if left operand register is less then immediate value sets value to 1, otherwise 0
     */
     void op_slti(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.b.rt, ((int32_t)get_reg(cpu, instr.b.rs)) < sign_extend_16(instr.b.imm16));
+    }
+
+    /*
+    * set if less than immediate unsigned
+    * if left operand register is less then immediate value sets value to 1, otherwise 0
+    */
+    void op_sltiu(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.b.rt, get_reg(cpu, instr.b.rs) < sign_extend_16(instr.b.imm16));
+    }
+
+    /*
+    * set on less then
+    * if left operand register is less then right operand value value sets value to 1, otherwise 0
+    */
+    void op_slt(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, (int32_t)get_reg(cpu, instr.a.rs) < (int32_t)get_reg(cpu, instr.a.rt));
     }
 
     /*
@@ -327,6 +353,59 @@ namespace ps1 {
     */
     void op_subu(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) - get_reg(cpu, instr.a.rt));
+    }
+
+    /*
+    * divide
+    TODO: needs to be properly emulated for correct timing
+    */
+    void op_div(cpu_t* cpu, cpu_instr_t instr) {
+        int32_t n = get_reg(cpu, instr.a.rs);
+        int32_t d = get_reg(cpu, instr.a.rt);
+        
+        if (d == 0) {
+            cpu->lo = n < 0 ? 1 : -1;
+            cpu->hi = n;
+        } else if ((uint32_t)n == 0x80000000 && d == ~0) {
+            cpu->lo = 0x80000000;
+            cpu->hi = 0;
+        } else {
+            cpu->lo = n / d;
+            cpu->hi = n % d;
+        }
+    }
+
+    /*
+    * divide unsigned
+    TODO: needs to be properly emulated for correct timing
+    */
+    void op_divu(cpu_t* cpu, cpu_instr_t instr) {
+        uint32_t n = get_reg(cpu, instr.a.rs);
+        uint32_t d = get_reg(cpu, instr.a.rt);
+        
+        if (d == 0) {
+            cpu->lo = ~0u;
+            cpu->hi = n;
+        } else {
+            cpu->lo = n / d;
+            cpu->hi = n % d;
+        }
+    }
+
+    /*
+    * move from LO
+    TODO: will stall if div is not finished
+    */
+    void op_mflo(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, cpu->lo);
+    }
+
+    /*
+    * move from HI
+    TODO: will stall if div is not finished
+    */
+    void op_mfhi(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, cpu->hi);
     }
 
     // handle invalid cpu instruction
@@ -368,12 +447,18 @@ namespace ps1 {
             { cpu_subfunc_t::OR, op_or },
             { cpu_subfunc_t::AND, op_and },
             { cpu_subfunc_t::SLTU, op_sltu },
+            { cpu_subfunc_t::SLT, op_slt },
             { cpu_subfunc_t::ADDU, op_addu },
             { cpu_subfunc_t::ADD, op_add },
             { cpu_subfunc_t::JR, op_jr },
             { cpu_subfunc_t::JALR, op_jalr },
             { cpu_subfunc_t::SUBU, op_subu },
             { cpu_subfunc_t::SRA, op_sra },
+            { cpu_subfunc_t::SRL, op_srl },
+            { cpu_subfunc_t::DIV, op_div },
+            { cpu_subfunc_t::DIVU, op_divu },
+            { cpu_subfunc_t::MFLO, op_mflo },
+            { cpu_subfunc_t::MFHI, op_mfhi },
         };
 
         auto subfunc = static_cast <cpu_subfunc_t> (instr.a.subfunc);
@@ -410,6 +495,7 @@ namespace ps1 {
             { cpu_opcode_t::BGTZ, op_bgtz },
             { cpu_opcode_t::BLEZ, op_blez },
             { cpu_opcode_t::SLTI, op_slti },
+            { cpu_opcode_t::SLTIU, op_sltiu },
             { cpu_opcode_t::COP, execute_cop0 },
         };
 

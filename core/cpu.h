@@ -56,6 +56,7 @@ namespace ps1 {
         BGTZ = 0b000111,
         BLEZ = 0b000110,
         SLTI = 0b001010,
+        SLTIU = 0b001011,
         COP = 0b010000,
     };
 
@@ -64,12 +65,18 @@ namespace ps1 {
         OR = 0b100101,
         AND = 0b100100,
         SLTU = 0b101011,
+        SLT = 0b101010,
         ADDU = 0b100001,
         ADD = 0b100000,
         JR = 0b001000,
         JALR = 0b001001,
         SUBU = 0b100011,
         SRA = 0b000011,
+        SRL = 0b000010,
+        DIV = 0b011010,
+        DIVU = 0b011011,
+        MFHI = 0b010000,
+        MFLO = 0b010010,
     };
 
     enum struct cpu_state_t {
