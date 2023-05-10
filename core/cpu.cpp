@@ -135,6 +135,14 @@ namespace ps1 {
     }
 
     /*
+    * shift right arithmetic
+    * preserves sign bit
+    */
+    void op_sra(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, ((int32_t)get_reg(cpu, instr.a.rt)) >> instr.a.imm5);
+    }
+
+    /*
     * add immediate unsigned
     * adds sign extended immediate value to register
     */
@@ -181,7 +189,7 @@ namespace ps1 {
     * bitwise or two registers
     */
     void op_or(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) | get_reg(cpu, instr.a.rt));
+        set_reg(cpu, instr.a.rt, get_reg(cpu, instr.a.rs) | get_reg(cpu, instr.a.rt));
     }
 
     /*
@@ -255,11 +263,32 @@ namespace ps1 {
     }
 
     /*
+    * bltz, bgez, bltzal, bgezal
+    */
+    void op_bbbb(cpu_t* cpu, cpu_instr_t instr) {
+        if (((instr.b.rt >> 4) & 0x1) ^ (get_reg(cpu, instr.b.rs) < 0)) {
+            if (instr.b.rt & 0x1) {
+                set_reg(cpu, 31, cpu->pc);
+            }
+
+            cpu_branch(cpu, sign_extend_16(instr.b.imm16));
+        }
+    }
+
+    /*
     * set on less than unsigned
     * if left operand register is less then right operand register sets value to 1, otherwise 0
     */
     void op_sltu(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) < get_reg(cpu, instr.a.rt));
+    }
+
+    /*
+    * set if less than immediate
+    * if left operand register is less then immediate value sets value to 1, otherwise 0
+    */
+    void op_slti(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.b.rt, get_reg(cpu, instr.b.rs) < sign_extend_16(instr.b.imm16));
     }
 
     /*
@@ -291,6 +320,13 @@ namespace ps1 {
         set_reg(cpu, instr.a.rd, cpu->pc);
 
         cpu->pc = get_reg(cpu, instr.a.rs);
+    }
+
+    /*
+    * subtract unsigned
+    */
+    void op_subu(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) - get_reg(cpu, instr.a.rt));
     }
 
     // handle invalid cpu instruction
@@ -336,6 +372,8 @@ namespace ps1 {
             { cpu_subfunc_t::ADD, op_add },
             { cpu_subfunc_t::JR, op_jr },
             { cpu_subfunc_t::JALR, op_jalr },
+            { cpu_subfunc_t::SUBU, op_subu },
+            { cpu_subfunc_t::SRA, op_sra },
         };
 
         auto subfunc = static_cast <cpu_subfunc_t> (instr.a.subfunc);
@@ -353,6 +391,7 @@ namespace ps1 {
     void execute(cpu_t* cpu, cpu_instr_t instr) {
         static umap_t <cpu_opcode_t, cpu_instr_handler_func> opmap = {
             { cpu_opcode_t::SPECIAL, execute_special },
+            { cpu_opcode_t::BBBB, op_bbbb },
             { cpu_opcode_t::LUI, op_lui },
             { cpu_opcode_t::ANDI, op_andi },
             { cpu_opcode_t::ORI, op_ori },
@@ -370,6 +409,7 @@ namespace ps1 {
             { cpu_opcode_t::BEQ, op_beq },
             { cpu_opcode_t::BGTZ, op_bgtz },
             { cpu_opcode_t::BLEZ, op_blez },
+            { cpu_opcode_t::SLTI, op_slti },
             { cpu_opcode_t::COP, execute_cop0 },
         };
 
