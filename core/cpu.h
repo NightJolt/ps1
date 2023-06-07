@@ -62,6 +62,7 @@ namespace ps1 {
 
     enum struct cpu_subfunc_t {
         SLL = 0b000000,
+        SYSCALL = 0b001100,
         OR = 0b100101,
         AND = 0b100100,
         SLTU = 0b101011,

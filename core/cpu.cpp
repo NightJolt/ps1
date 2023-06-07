@@ -408,6 +408,12 @@ namespace ps1 {
         set_reg(cpu, instr.a.rd, cpu->hi);
     }
 
+    /*
+    * syscall
+    */
+    void op_syscall(cpu_t* cpu, cpu_instr_t instr) {
+    }
+
     // handle invalid cpu instruction
     void execute_err(cpu_t* cpu, cpu_instr_t instr) {
         DEBUG_CODE(char err_msg_buffer[64]);
@@ -444,6 +450,7 @@ namespace ps1 {
     void execute_special(cpu_t* cpu, cpu_instr_t instr) {
         static umap_t <cpu_subfunc_t, cpu_instr_handler_func> opmap = {
             { cpu_subfunc_t::SLL, op_sll },
+            { cpu_subfunc_t::SYSCALL, op_syscall },
             { cpu_subfunc_t::OR, op_or },
             { cpu_subfunc_t::AND, op_and },
             { cpu_subfunc_t::SLTU, op_sltu },
