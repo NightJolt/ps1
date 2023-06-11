@@ -71,6 +71,14 @@ namespace ps1 {
     }
 
     /*
+    * return from exception
+    */
+    void op_rfe(cpu_t* cpu, cpu_instr_t instr) {
+        cpu_reg_t status = cpu->c0regs[12];
+        cpu->c0regs[12] = (status & (~0x3F)) | ((status & 0x3F) >> 2);
+    }
+
+    /*
     * syscall
     */
     void op_syscall(cpu_t* cpu, cpu_instr_t instr) {
@@ -476,9 +484,10 @@ namespace ps1 {
     void execute_cop0(cpu_t* cpu, cpu_instr_t instr) {
         if (instr.a.opcode == 0b010000 && instr.a.rs == 0b00100) {
             op_mtc0(cpu, instr);
-        } else
-        if (instr.a.opcode == 0b010000 && instr.a.rs == 0b00000) {
+        } else if (instr.a.opcode == 0b010000 && instr.a.rs == 0b00000) {
             op_mfc0(cpu, instr);
+        } else if (instr.a.opcode == 0b010000 && instr.a.rs == 0b10000 && instr.a.subfunc == 0b010000) {
+            op_rfe(cpu, instr);
         } else {
             DEBUG_CODE(execute_err(cpu, instr));
         }
