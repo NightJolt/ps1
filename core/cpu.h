@@ -78,6 +78,8 @@ namespace ps1 {
         DIVU = 0b011011,
         MFHI = 0b010000,
         MFLO = 0b010010,
+        MTLO = 0b010011,
+        MTHI = 0b010001,
     };
 
     enum struct cpu_state_t {
@@ -88,12 +90,6 @@ namespace ps1 {
 
     // * 32-bit MIPS R3000A processor.
     struct cpu_t {
-        /*
-        * instruction in delay slot
-        * this instruction is going to be executed on next cpu cycle
-        */
-        cpu_instr_t instr_delay_slot;
-        
         /*
         * fetching data from ram first stores value in load delay slot.
         * after half* cycle value is stored in target register
@@ -116,10 +112,32 @@ namespace ps1 {
         cpu_reg_t pc;
 
         /*
+        * currently executing instruction
+        * needed for exception handling
+        */
+        cpu_reg_t cpc;
+
+        /*
+        * next pc
+        * this is the address of the instruction that will be executed on next cpu cycle
+        * needed to simulate branch delay slot
+        */
+        cpu_reg_t npc;
+
+        /*
         * cop0 registers
         *
+        * reg 3 BPC, used to generate a breakpoint exception when the PC takes the given value
+        * reg 5 BDA, the data breakpoint. breaks when a certain address is accessed on a data load/store
+        * reg 6 no info
+        * reg 7 DCIC, used to enable and disable the various hardware breakpoints
+        * reg 9 BDAM, it’s a bitmask applied when testing for BDA above. can trigger on a range of address instead of a single one.
+        * reg 11 BPCM, same as BDAM but for BPC
+        * reg 13 cause of exception. readonly.  bits [9:8] are writable to force an exception
+        * 
         * reg 12 (status register):
         * bit 16 - redirects all bus r/w to cache
+        * bit 22 - boot exception vectors in RAM/ROM (0=RAM/KSEG0, 1=ROM/KSEG1)
         */
         cpu_reg_t c0regs[32];
 

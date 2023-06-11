@@ -124,7 +124,21 @@ namespace ps1 {
     }
 }
 
-void ps1::debugger::display_cpu_info(cpu_t* cpu) {
+namespace ps1 {
+    uint32_t bus_fetch32_debug(bus_t* bus, mem_addr_t mem_addr) {
+        ASSERT(mem_addr % 4 == 0, "Unaligned memory access");
+
+        for (auto& device_info : bus->devices) {
+            if (device_info.mem_range.contains(mem_addr)) {
+                return device_info.fetch32(device_info.device, device_info.mem_range.offset(mem_addr));
+            }
+        }
+
+        return 0;
+    }
+}
+
+void ps1::debugger::display_cpu_info(cpu_t* cpu, bus_t* bus) {
     ImGui::Begin("CPU");
 
         if (cpu->state == cpu_state_t::halted) {
@@ -203,13 +217,13 @@ void ps1::debugger::display_cpu_info(cpu_t* cpu) {
                 ImGui::TextWrapped("Instruction");
 
                 static char instr_buffer[12];
-                sprintf(instr_buffer, "0x%08X", (uint32_t)cpu->instr_delay_slot);
+                sprintf(instr_buffer, "0x%08X", bus_fetch32_debug(bus, cpu->npc));
                 
                 ImGui::TableNextColumn();
                 ImGui::TextWrapped(instr_buffer);
                 
                 ImGui::TableNextColumn();
-                ImGui::TextWrapped(to_bin((uint32_t)cpu->instr_delay_slot).c_str());
+                ImGui::TextWrapped(to_bin((uint32_t)bus_fetch32_debug(bus, cpu->npc)).c_str());
             }
             
             {
@@ -269,20 +283,6 @@ void ps1::debugger::display_cpu_info(cpu_t* cpu) {
         ImGui::EndChild();
 
     ImGui::End();
-}
-
-namespace ps1 {
-    uint32_t bus_fetch32_debug(bus_t* bus, mem_addr_t mem_addr) {
-        ASSERT(mem_addr % 4 == 0, "Unaligned memory access");
-
-        for (auto& device_info : bus->devices) {
-            if (device_info.mem_range.contains(mem_addr)) {
-                return device_info.fetch32(device_info.device, device_info.mem_range.offset(mem_addr));
-            }
-        }
-
-        return 0;
-    }
 }
 
 void ps1::debugger::display_instr_view(cpu_t* cpu, bus_t* bus) {

@@ -7,6 +7,7 @@ namespace ps1 {
     const cpu_instr_t nop = 0x00000000; // * no operation
 
     constexpr uint32_t SR_ISOLATE_CACHE_BIT = 1 << 16; // * redirect all subsequent R/W to cache
+    constexpr uint32_t SR_BOOT_EXCEPTION_VECTORS_BIT = 1 << 22; // * BEV bit, 0=RAM/KSEG0, 1=ROM/KSEG1
 
     uint32_t sign_extend_16(uint32_t value) {
         return (uint32_t)(int16_t)value;
@@ -47,6 +48,35 @@ namespace ps1 {
 }
 
 namespace ps1 {
+    enum struct exception_t : uint32_t {
+        syscall = 0x8
+    };
+
+    /*
+    * throw exception
+    */
+    void throw_exception(cpu_t* cpu, exception_t cause) {
+        mem_addr_t handler_func_addr = cpu->c0regs[12] & SR_BOOT_EXCEPTION_VECTORS_BIT ? 0xBFC00180 : 0x80000080;
+
+        // * push no interrupt/kernel mode to interrupt/kernel-user mode stack
+        cpu_reg_t status = cpu->c0regs[12];
+        status = (status & (~0x3F)) | ((status << 2) & 0x3F);
+
+        cpu->c0regs[12] = status;
+        cpu->c0regs[13] = ((uint32_t)cause) << 2;
+        cpu->c0regs[14] = cpu->cpc;
+
+        cpu->pc = handler_func_addr;
+        cpu->npc = cpu->pc + sizeof(cpu_instr_t);
+    }
+
+    /*
+    * syscall
+    */
+    void op_syscall(cpu_t* cpu, cpu_instr_t instr) {
+        throw_exception(cpu, exception_t::syscall);
+    }
+
     /*
     * load upper immediate
     * stores 16 bit immediate value into 16 msb of target register
@@ -191,7 +221,7 @@ namespace ps1 {
     * jump within the current 256MB of addressable memory
     */
     void op_j(cpu_t* cpu, cpu_instr_t instr) {
-        cpu->pc = (cpu->pc & 0xF0000000) | (instr.c.imm26 << 2); // * << 2 align with memory
+        cpu->npc = (cpu->npc & 0xF0000000) | (instr.c.imm26 << 2); // * << 2 align with memory
     }
 
     /*
@@ -223,7 +253,7 @@ namespace ps1 {
     * move value from cop0 reg to cpu reg
     */
     void op_mfc0(cpu_t* cpu, cpu_instr_t instr) {
-        ASSERT(instr.a.rd == 12, "only cop0 reg 12 is implemented");
+        ASSERT(instr.a.rd == 12 || instr.a.rd == 13 ||  instr.a.rd == 14, "only cop0 reg 12/13/14 is implemented");
 
         set_reg_delayed(cpu, instr.a.rt, get_c0reg(cpu, instr.a.rd));
     }
@@ -233,7 +263,7 @@ namespace ps1 {
     * aligns offset with memory and then compensates one extra cpu cycle
     */
     void cpu_branch(cpu_t* cpu, uint32_t offset) {
-        cpu->pc += (offset << 2) - sizeof(cpu_instr_t);
+        cpu->npc += (offset << 2) - sizeof(cpu_instr_t);
     }
 
     /*
@@ -278,7 +308,7 @@ namespace ps1 {
     void op_bbbb(cpu_t* cpu, cpu_instr_t instr) {
         if (((instr.b.rt >> 4) & 0x1) ^ (get_reg(cpu, instr.b.rs) < 0)) {
             if (instr.b.rt & 0x1) {
-                set_reg(cpu, 31, cpu->pc);
+                set_reg(cpu, 31, cpu->npc);
             }
 
             cpu_branch(cpu, sign_extend_16(instr.b.imm16));
@@ -323,7 +353,7 @@ namespace ps1 {
     * used to call functions
     */
     void op_jal(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, 31, cpu->pc);
+        set_reg(cpu, 31, cpu->npc);
 
         op_j(cpu, instr);
     }
@@ -334,7 +364,7 @@ namespace ps1 {
     * used as a return from function
     */
     void op_jr(cpu_t* cpu, cpu_instr_t instr) {
-        cpu->pc = get_reg(cpu, instr.a.rs);
+        cpu->npc = get_reg(cpu, instr.a.rs);
     }
 
     /*
@@ -343,9 +373,9 @@ namespace ps1 {
     * stores current pc into register
     */
     void op_jalr(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, instr.a.rd, cpu->pc);
+        set_reg(cpu, instr.a.rd, cpu->npc);
 
-        cpu->pc = get_reg(cpu, instr.a.rs);
+        cpu->npc = get_reg(cpu, instr.a.rs);
     }
 
     /*
@@ -409,9 +439,17 @@ namespace ps1 {
     }
 
     /*
-    * syscall
+    * move to LO
     */
-    void op_syscall(cpu_t* cpu, cpu_instr_t instr) {
+    void op_mtlo(cpu_t* cpu, cpu_instr_t instr) {
+        cpu->lo = get_reg(cpu, instr.a.rs);
+    }
+
+    /*
+    * move to HI
+    */
+    void op_mthi(cpu_t* cpu, cpu_instr_t instr) {
+        cpu->hi = get_reg(cpu, instr.a.rs);
     }
 
     // handle invalid cpu instruction
@@ -466,6 +504,8 @@ namespace ps1 {
             { cpu_subfunc_t::DIVU, op_divu },
             { cpu_subfunc_t::MFLO, op_mflo },
             { cpu_subfunc_t::MFHI, op_mfhi },
+            { cpu_subfunc_t::MTLO, op_mtlo },
+            { cpu_subfunc_t::MTHI, op_mthi },
         };
 
         auto subfunc = static_cast <cpu_subfunc_t> (instr.a.subfunc);
@@ -535,9 +575,10 @@ void ps1::cpu_init(cpu_t* cpu, bus_t* bus) {
     cpu->hi = register_garbage_value;
     cpu->lo = register_garbage_value;
 
+    cpu->cpc = 0;
     cpu->pc = BIOS_ENTRY; // * target BIOS entry function
+    cpu->npc = cpu->pc + sizeof(cpu_instr_t);
 
-    cpu->instr_delay_slot = nop;
     set_reg_delayed(cpu, 0, 0);
 
     cpu->c0regs[12] = 0; // * set cop0 status register to 0
@@ -549,10 +590,11 @@ void ps1::cpu_init(cpu_t* cpu, bus_t* bus) {
 }
 
 void ps1::cpu_tick(cpu_t* cpu) {
-    cpu_instr_t instr = cpu->instr_delay_slot; // * fetch instruction from delay slot
-    cpu->instr_delay_slot = bus_fetch32(cpu->bus, cpu->pc); // * fetch instruction from memory
-
-    cpu->pc += sizeof(cpu_instr_t); // * advance program counter
+    cpu_instr_t instr = bus_fetch32(cpu->bus, cpu->pc); // * fetch current instruction from memory
+    
+    cpu->cpc = cpu->pc; // * update current program counter
+    cpu->pc = cpu->npc; // * advance program counter
+    cpu->npc += sizeof(cpu_instr_t); // * advance program counter
 
     // * move value from load delay slot to output register values
     set_reg(cpu, cpu->load_delay_target, cpu->load_delay_value);
@@ -561,7 +603,7 @@ void ps1::cpu_tick(cpu_t* cpu) {
     execute(cpu, instr); // * execute next instruction
     
     // * update reg values
-    memcpy(cpu->in_regs, cpu->out_regs, sizeof(cpu_instr_t) * 32);
+    memcpy(cpu->in_regs, cpu->out_regs, sizeof(cpu_reg_t) * 32);
     
     // ! debug
     cpu->instr_exec_cnt++;
