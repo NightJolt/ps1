@@ -16,6 +16,10 @@ namespace ps1 {
     uint32_t sign_extend_8(uint32_t value) {
         return (uint32_t)(int8_t)value;
     }
+
+    bool is_add_overflow(int32_t a, int32_t b) {
+        return (a > 0 && b > 0 && a + b < 0) || (a < 0 && b < 0 && a + b > 0);
+    }
 }
 
 namespace ps1 {
@@ -49,7 +53,8 @@ namespace ps1 {
 
 namespace ps1 {
     enum struct exception_t : uint32_t {
-        syscall = 0x8
+        syscall = 0x8,
+        overflow = 0xC,
     };
 
     /*
@@ -65,6 +70,12 @@ namespace ps1 {
         cpu->c0regs[12] = status;
         cpu->c0regs[13] = ((uint32_t)cause) << 2;
         cpu->c0regs[14] = cpu->cpc;
+
+        // ! might not work in case of 4 byte forward jump in branching
+        if ((int32_t)cpu->pc - (int32_t)cpu->cpc != sizeof(cpu_instr_t)) {
+            cpu->c0regs[14] -= sizeof(cpu_instr_t);
+            cpu->c0regs[13] |= 1 << 31;
+        }
 
         cpu->pc = handler_func_addr;
         cpu->npc = cpu->pc + sizeof(cpu_instr_t);
@@ -200,10 +211,16 @@ namespace ps1 {
     * add immediate
     * adds sign extended immediate value to register
     * must throw and exeption when overflow occurs
-    TODO: MUST CHECK FOR OVERFLOW
     */
     void op_addi(cpu_t* cpu, cpu_instr_t instr) {
-        op_addiu(cpu, instr);
+        int32_t a = get_reg(cpu, instr.b.rs);
+        int32_t b = sign_extend_16(instr.b.imm16);
+
+        if (is_add_overflow(a, b)) {
+            throw_exception(cpu, exception_t::overflow);
+        } else {
+            set_reg(cpu, instr.b.rt, a + b);
+        }
     }
 
     /*
@@ -218,10 +235,16 @@ namespace ps1 {
     * add unsigned
     * adds two registers
     * must throw and exeption when overflow occurs
-    TODO: MUST CHECK FOR OVERFLOW
     */
     void op_add(cpu_t* cpu, cpu_instr_t instr) {
-        op_addu(cpu, instr);
+        int32_t a = get_reg(cpu, instr.a.rs);
+        int32_t b = get_reg(cpu, instr.a.rt);
+
+        if (is_add_overflow(a, b)) {
+            throw_exception(cpu, exception_t::overflow);
+        } else {
+            set_reg(cpu, instr.a.rd, a + b);
+        }
     }
 
     /*
