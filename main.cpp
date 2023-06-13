@@ -83,6 +83,10 @@ int main() {
             // * Timer
             nodevice_info.mem_range = { 0x1F801100, 0x1F80112F - 0x1F801100 };
             ps1::bus_connect(&bus, nodevice_info);
+
+            // * DMA (Direct Memory Access)
+            nodevice_info.mem_range = { 0x1F801080, 0x1F801100 - 0x1F801080 };
+            ps1::bus_connect(&bus, nodevice_info);
         }
 
         bios_info.mem_range = { ps1::BIOS_KSEG1, ps1::BIOS_SIZE };
