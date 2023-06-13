@@ -181,11 +181,45 @@ namespace ps1 {
     }
 
     /*
+    * load halfword
+    * 16 bit memory aligned fetch from bus
+    */
+   void op_lh(cpu_t* cpu, cpu_instr_t instr) {
+        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // ? should be redirected to cache
+
+        mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
+
+        if (addr % 2 == 0) {
+            set_reg_delayed(cpu, instr.b.rt, sign_extend_16(bus_fetch16(cpu->bus, addr)));
+        } else {
+            throw_exception(cpu, exception_t::load);
+        }
+    }
+
+    /*
+    * load halfword unsigned
+    * 16 bit memory aligned fetch from bus
+    */
+   void op_lhu(cpu_t* cpu, cpu_instr_t instr) {
+        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // ? should be redirected to cache
+
+        mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
+
+        if (addr % 2 == 0) {
+            set_reg_delayed(cpu, instr.b.rt, bus_fetch16(cpu->bus, addr));
+        } else {
+            throw_exception(cpu, exception_t::load);
+        }
+    }
+
+    /*
     * load byte
     * 8 bit fetch from bus
     ? PROBABLY NOT AFFECTED BY ISOLATED CACHE BIT
     */
     void op_lb(cpu_t* cpu, cpu_instr_t instr) {
+        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // ? should be redirected to cache
+
         set_reg_delayed(cpu, instr.b.rt, sign_extend_8(bus_fetch8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16))));
     }
 
@@ -195,6 +229,8 @@ namespace ps1 {
     ? PROBABLY NOT AFFECTED BY ISOLATED CACHE BIT
     */
     void op_lbu(cpu_t* cpu, cpu_instr_t instr) {
+        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // ? should be redirected to cache
+
         set_reg_delayed(cpu, instr.b.rt, bus_fetch8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16)));
     }
 
@@ -205,6 +241,13 @@ namespace ps1 {
     */
     void op_sll(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rt) << instr.a.imm5);
+    }
+
+    /*
+    * shift left logical variable
+    */
+    void op_sllv(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rt) << (get_reg(cpu, instr.a.rs) & 0x1F)); // *we only care about the last 5 bits
     }
 
     /*
@@ -507,6 +550,13 @@ namespace ps1 {
         cpu->hi = get_reg(cpu, instr.a.rs);
     }
 
+    /*
+    * nor (bitwise not or)
+    */
+   void op_nor(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, !(get_reg(cpu, instr.a.rs) | get_reg(cpu, instr.a.rt)));
+    }
+
     // handle invalid cpu instruction
     void execute_err(cpu_t* cpu, cpu_instr_t instr) {
         DEBUG_CODE(char err_msg_buffer[64]);
@@ -544,6 +594,7 @@ namespace ps1 {
     void execute_special(cpu_t* cpu, cpu_instr_t instr) {
         static umap_t <cpu_subfunc_t, cpu_instr_handler_func> opmap = {
             { cpu_subfunc_t::SLL, op_sll },
+            { cpu_subfunc_t::SLLV, op_sllv },
             { cpu_subfunc_t::SYSCALL, op_syscall },
             { cpu_subfunc_t::OR, op_or },
             { cpu_subfunc_t::AND, op_and },
@@ -562,6 +613,8 @@ namespace ps1 {
             { cpu_subfunc_t::MFHI, op_mfhi },
             { cpu_subfunc_t::MTLO, op_mtlo },
             { cpu_subfunc_t::MTHI, op_mthi },
+            { cpu_subfunc_t::NOR, op_nor },
+
         };
 
         auto subfunc = static_cast <cpu_subfunc_t> (instr.a.subfunc);
@@ -587,6 +640,8 @@ namespace ps1 {
             { cpu_opcode_t::SH, op_sh },
             { cpu_opcode_t::SB, op_sb },
             { cpu_opcode_t::LW, op_lw },
+            { cpu_opcode_t::LH, op_lh },
+            { cpu_opcode_t::LHU, op_lhu },
             { cpu_opcode_t::LB, op_lb },
             { cpu_opcode_t::LBU, op_lbu },
             { cpu_opcode_t::ADDIU, op_addiu },

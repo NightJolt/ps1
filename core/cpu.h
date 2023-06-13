@@ -45,6 +45,8 @@ namespace ps1 {
         SH = 0b101001,
         SB = 0b101000,
         LW = 0b100011,
+        LH = 0b100001,
+        LHU = 0b100101,
         LB = 0b100000,
         LBU = 0b100100,
         ADDIU = 0b001001,
@@ -62,6 +64,7 @@ namespace ps1 {
 
     enum struct cpu_subfunc_t {
         SLL = 0b000000,
+        SLLV = 0b000100,
         SYSCALL = 0b001100,
         OR = 0b100101,
         AND = 0b100100,
@@ -80,6 +83,7 @@ namespace ps1 {
         MFLO = 0b010010,
         MTLO = 0b010011,
         MTHI = 0b010001,
+        NOR = 0b100111,
     };
 
     enum struct cpu_state_t {
