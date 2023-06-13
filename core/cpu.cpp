@@ -53,6 +53,8 @@ namespace ps1 {
 
 namespace ps1 {
     enum struct exception_t : uint32_t {
+        load = 0x4,
+        store = 0x5,
         syscall = 0x8,
         overflow = 0xC,
     };
@@ -127,7 +129,13 @@ namespace ps1 {
     void op_sw(cpu_t* cpu, cpu_instr_t instr) {
         if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
 
-        bus_store32(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16), get_reg(cpu, instr.b.rt));
+        mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
+
+        if (addr % 4 == 0) {
+            bus_store32(cpu->bus, addr, get_reg(cpu, instr.b.rt));
+        } else {
+            throw_exception(cpu, exception_t::store);
+        }
     }
 
     /*
@@ -137,7 +145,13 @@ namespace ps1 {
     void op_sh(cpu_t* cpu, cpu_instr_t instr) {
         if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
 
-        bus_store16(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16), get_reg(cpu, instr.b.rt));
+        mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
+
+        if (addr % 2 == 0) {
+            bus_store16(cpu->bus, addr, get_reg(cpu, instr.b.rt));
+        } else {
+            throw_exception(cpu, exception_t::store);
+        }
     }
 
     /*
@@ -155,12 +169,21 @@ namespace ps1 {
     * 32 bit memory aligned fetch from bus
     */
     void op_lw(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg_delayed(cpu, instr.b.rt, bus_fetch32(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16)));
+        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
+
+        mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
+
+        if (addr % 4 == 0) {
+            set_reg_delayed(cpu, instr.b.rt, bus_fetch32(cpu->bus, addr));
+        } else {
+            throw_exception(cpu, exception_t::load);
+        }
     }
 
     /*
     * load byte
     * 8 bit fetch from bus
+    ? PROBABLY NOT AFFECTED BY ISOLATED CACHE BIT
     */
     void op_lb(cpu_t* cpu, cpu_instr_t instr) {
         set_reg_delayed(cpu, instr.b.rt, sign_extend_8(bus_fetch8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16))));
@@ -169,6 +192,7 @@ namespace ps1 {
     /*
     * load byte unsigned
     * 8 bit fetch from bus
+    ? PROBABLY NOT AFFECTED BY ISOLATED CACHE BIT
     */
     void op_lbu(cpu_t* cpu, cpu_instr_t instr) {
         set_reg_delayed(cpu, instr.b.rt, bus_fetch8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16)));
@@ -622,9 +646,16 @@ void ps1::cpu_init(cpu_t* cpu, bus_t* bus) {
 }
 
 void ps1::cpu_tick(cpu_t* cpu) {
-    cpu_instr_t instr = bus_fetch32(cpu->bus, cpu->pc); // * fetch current instruction from memory
-    
     cpu->cpc = cpu->pc; // * update current program counter
+
+    if (cpu->cpc % sizeof(cpu_instr_t) != 0) {
+        throw_exception(cpu, exception_t::load);
+
+        return;
+    }
+
+    cpu_instr_t instr = bus_fetch32(cpu->bus, cpu->cpc); // * fetch current instruction from memory
+    
     cpu->pc = cpu->npc; // * advance program counter
     cpu->npc += sizeof(cpu_instr_t); // * advance program counter
 
