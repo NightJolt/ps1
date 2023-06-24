@@ -6,6 +6,7 @@
 #include "ram.h"
 #include "nodevice.h"
 #include "expansion.h"
+#include "gpu.h"
 
 #include "render.h"
 #include "logger.h"
@@ -56,6 +57,11 @@ int main() {
     expansion_info.device = &expansion;
     expansion_info.fetch8 = ps1::expansion_fetch8;
 
+    ps1::gpu_t gpu;
+    ps1::device_info_t gpu_info;
+    gpu_info.device = &gpu;
+    SETUP_STORE_FETCH(ps1::gpu_t, gpu_info);
+
     ps1::nodevice_t nodevice;
     ps1::device_info_t nodevice_info;
     nodevice_info.device = &nodevice;
@@ -87,6 +93,11 @@ int main() {
             // * DMA (Direct Memory Access)
             nodevice_info.mem_range = { 0x1F801080, 0x1F801100 - 0x1F801080 };
             ps1::bus_connect(&bus, nodevice_info);
+        }
+
+        {
+            gpu_info.mem_range = { 0x1F801810, 8 };
+            ps1::bus_connect(&bus, gpu_info);
         }
 
         bios_info.mem_range = { ps1::BIOS_KSEG1, ps1::BIOS_SIZE };
