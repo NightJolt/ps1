@@ -103,6 +103,20 @@ namespace ps1 {
 
         /*
         * need two set of registers to simulate half cycles from load delay slot
+        *
+        * reg 0 zero
+        * reg 1 assembler temporary
+        * reg 2-3 return values
+        * reg 4-7 arguments
+        * reg 8-15 temporary
+        * reg 16-23 saved
+        * reg 24-25 temporary
+        * reg 26-27 kernel
+        * reg 28 global pointer
+        * reg 29 stack pointer
+        * reg 30 frame pointer
+        * reg 31 return address
+        * 
         */
         cpu_reg_t in_regs[32]; // * general purpose registers
         cpu_reg_t out_regs[32]; // * we need to torelate load delay slot. however, copying 128 byte per cycle is terrible. need better solution!
