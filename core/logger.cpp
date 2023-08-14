@@ -14,6 +14,7 @@ namespace {
     }
 
     bool filter[4] = { 1, 1, 1, 1 };
+    char search_buffer[256]  = { 0 };
 }
 
 void ps1::logger::push(const str_t& msg, type_t type, const str_t& channel) {
@@ -40,26 +41,39 @@ void ps1::logger::push(const str_t& msg, type_t type, const str_t& channel) {
 void ps1::logger::display() {
     ImGui::Begin("Debug Log");
         ImGui::PushStyleColor(ImGuiCol_Text, ::get_type_color(type_t::message));
-        ImGui::Checkbox("message", ::filter);
+        ImGui::Checkbox("message", filter);
         ImGui::PopStyleColor();
 
         ImGui::SameLine();
         
         ImGui::PushStyleColor(ImGuiCol_Text, ::get_type_color(type_t::info));
-        ImGui::Checkbox("info", ::filter + 1);
+        ImGui::Checkbox("info", filter + 1);
         ImGui::PopStyleColor();
 
         ImGui::SameLine();
         
         ImGui::PushStyleColor(ImGuiCol_Text, ::get_type_color(type_t::warning));
-        ImGui::Checkbox("warning", ::filter + 2);
+        ImGui::Checkbox("warning", filter + 2);
         ImGui::PopStyleColor();
 
         ImGui::SameLine();
         
         ImGui::PushStyleColor(ImGuiCol_Text, ::get_type_color(type_t::error));
-        ImGui::Checkbox("error", ::filter + 3);
+        ImGui::Checkbox("error", filter + 3);
         ImGui::PopStyleColor();
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Clear"))
+        {
+            channels.clear();
+            logs.clear();
+            order.clear();
+        }
+
+        ImGui::SameLine();
+
+        ImGui::InputText("##SearchText", search_buffer, sizeof(search_buffer));
 
         ImGui::Spacing();
 
@@ -70,13 +84,13 @@ void ps1::logger::display() {
 
             if (ImGui::BeginTable("all##table", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
                 ImGui::TableSetupColumn(nullptr, 0, 1);
-                ImGui::TableSetupColumn(nullptr, 0, 12);
+                ImGui::TableSetupColumn(nullptr, 0, 6);
 
                 for (auto& [channel_index, message_index] : order) {
                     const str_t& msg = logs[channel_index][message_index].first;
                     const type_t type = logs[channel_index][message_index].second;
 
-                    if (!::filter[(uint32_t)type]) continue;
+                    if (!filter[(uint32_t)type] || (search_buffer[0] != '\0' && msg.find(search_buffer) == str_t::npos)) continue;
 
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
@@ -105,7 +119,7 @@ void ps1::logger::display() {
 
                 if (ImGui::BeginTable((channels[i] + "##table").c_str(), 1, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
                     for (const auto& [msg, type] : logs[i]) {
-                        if (!::filter[(uint32_t)type]) continue;
+                        if (!filter[(uint32_t)type] || (search_buffer[0] != '\0' && msg.find(search_buffer) == str_t::npos)) continue;
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
