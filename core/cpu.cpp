@@ -1,6 +1,7 @@
 #include "cpu.h"
 #include "bus.h"
 #include "logger.h"
+#include "file.h"
 
 namespace ps1 {
     constexpr cpu_reg_t register_garbage_value = 0xDEADBEEF; // * magic value for debugging
@@ -747,4 +748,58 @@ void ps1::cpu_set_state(cpu_t* cpu, cpu_state_t cpu_state) {
     cpu->state = cpu_state;
 
     DEBUG_CODE(if (cpu_state == cpu_state_t::halted) logger::push("CPU HALTED", logger::type_t::error, "cpu"));
+}
+
+void ps1::cpu_save_state(cpu_t* cpu) {
+    file::write32(cpu->load_delay_target);
+    file::write32(cpu->load_delay_value);
+
+    for (auto val : cpu->in_regs) {
+        file::write32(val);
+    }
+
+    for (auto val : cpu->out_regs) {
+        file::write32(val);
+    }
+
+    file::write32(cpu->hi);
+    file::write32(cpu->lo);
+
+    file::write32(cpu->cpc);
+    file::write32(cpu->pc);
+    file::write32(cpu->npc);
+
+    for (auto val : cpu->c0regs) {
+        file::write32(val);
+    }
+
+    file::write32(cpu->instr_exec_cnt);
+}
+
+void ps1::cpu_load_state(cpu_t* cpu) {
+    cpu->load_delay_target = file::read32();
+    cpu->load_delay_value = file::read32();
+
+    for (auto& val : cpu->in_regs) {
+        val = file::read32();
+    }
+
+    for (auto& val : cpu->out_regs) {
+        val = file::read32();
+    }
+
+    cpu->hi = file::read32();
+    cpu->lo = file::read32();
+
+    cpu->cpc = file::read32();
+    cpu->pc = file::read32();
+    cpu->npc = file::read32();
+
+    for (auto& val : cpu->c0regs) {
+        val = file::read32();
+    }
+
+    cpu->instr_exec_cnt = file::read32();
+
+    cpu_set_state(cpu, cpu_state_t::sleeping);
 }

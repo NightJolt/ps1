@@ -22,11 +22,32 @@ namespace {
 
 namespace ps1 {
     void display_emulation_view(ps1_t* console) {
+        static char save_state_path[128] = "state.bin";
+        static char load_state_path[128] = "state.bin";
+
         ImGui::Begin("Emulation");
 
             if (ImGui::Button("Soft Reset")) {
                 ps1_soft_reset(console);
             }
+
+            if (ImGui::Button("Save State")) {
+                ps1_save_state(console, save_state_path);
+            }
+
+            ImGui::SameLine();
+
+            ImGui::SetNextItemWidth(-1);
+            ImGui::InputText("##save_state_path", save_state_path, sizeof(save_state_path));
+
+            if (ImGui::Button("Load State")) {
+                ps1_load_state(console, load_state_path);
+            }
+
+            ImGui::SameLine();
+
+            ImGui::SetNextItemWidth(-1);
+            ImGui::InputText("##load_state_path", load_state_path, sizeof(load_state_path));
 
         ImGui::End();
     }

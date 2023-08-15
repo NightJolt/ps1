@@ -176,6 +176,12 @@ namespace ps1 {
     // * advance by one instruction
     void cpu_tick(cpu_t*);
 
-    // *put cpu in halted state
+    // * put cpu in specified state
     void cpu_set_state(cpu_t*, cpu_state_t);
+    
+    // * save cpu state to file
+    void cpu_save_state(cpu_t*);
+
+    // * load cpu state from file
+    void cpu_load_state(cpu_t*);
 }

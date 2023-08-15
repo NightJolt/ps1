@@ -10,6 +10,9 @@ namespace ps1 {
 
     void ram_init(ram_t*);
     void ram_exit(ram_t*);
+    
+    void ram_save_state(ram_t*);
+    void ram_load_state(ram_t*);
 
     FETCH_FN(ram_t) fetch(void* ram, mem_addr_t offset) {
         return *(type*)(((device*)ram)->data + offset);

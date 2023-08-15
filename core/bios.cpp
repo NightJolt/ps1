@@ -3,7 +3,7 @@
 #include "logger.h"
 
 void ps1::bios_init(bios_t* bios, const str_t& path) {
-    bios->data = read_binary(path);
+    bios->data = file::read_binary(path);
     
     ASSERT(bios->data, "Failed to load BIOS binary");
 

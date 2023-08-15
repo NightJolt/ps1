@@ -1,5 +1,7 @@
 #include "ps1.h"
 
+#include "file.h"
+
 #define SETUP_FETCH(type, info)\
     info.fetch32 = ps1::fetch<type, uint32_t>;\
     info.fetch16 = ps1::fetch<type, uint16_t>;\
@@ -110,6 +112,12 @@ void ps1::ps1_init(ps1_t* console, const str_t& bios_path) {
     ps1_soft_reset(console);
 }
 
+void ps1::ps1_exit(ps1_t* console) {
+    cpu_exit(&console->cpu);
+    bus_exit(&console->bus);
+    bios_exit(&console->bios);
+}
+
 void ps1::ps1_soft_reset(ps1_t* console) {
     ram_exit(&console->ram);
     cpu_exit(&console->cpu);
@@ -118,8 +126,16 @@ void ps1::ps1_soft_reset(ps1_t* console) {
     ram_init(&console->ram);
 }
 
-void ps1::ps1_exit(ps1_t* console) {
-    cpu_exit(&console->cpu);
-    bus_exit(&console->bus);
-    bios_exit(&console->bios);
+void ps1::ps1_save_state(ps1_t* console, const str_t& path) {
+    file::open_writable(path);
+    cpu_save_state(&console->cpu);
+    ram_save_state(&console->ram);
+    file::close_writable();
+}
+
+void ps1::ps1_load_state(ps1_t* console, const str_t& path) {
+    file::open_readable(path);
+    cpu_load_state(&console->cpu);
+    ram_load_state(&console->ram);
+    file::close_readable();
 }
