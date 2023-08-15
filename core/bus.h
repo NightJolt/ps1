@@ -29,6 +29,9 @@ namespace ps1 {
         dyn_arr_t <device_info_t> devices;
     };
 
+    void bus_init(bus_t*);
+    void bus_exit(bus_t*);
+
     void bus_connect(bus_t*, device_info_t);
 
     uint32_t bus_fetch32(bus_t*, mem_addr_t);

@@ -170,6 +170,9 @@ namespace ps1 {
      // * init scpu state
     void cpu_init(cpu_t*, bus_t*);
 
+     // * clear scpu state
+    void cpu_exit(cpu_t*);
+
     // * advance by one instruction
     void cpu_tick(cpu_t*);
 

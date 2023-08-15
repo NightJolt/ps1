@@ -1,5 +1,11 @@
 #include "bus.h"
 
+void ps1::bus_init(bus_t* bus) {}
+
+void ps1::bus_exit(bus_t* bus) {
+    bus->devices.clear();
+}
+
 void ps1::bus_connect(bus_t* bus, device_info_t device_info) {
     bus->devices.emplace_back(device_info);
 }

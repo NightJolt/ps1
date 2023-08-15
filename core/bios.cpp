@@ -10,6 +10,6 @@ void ps1::bios_init(bios_t* bios, const str_t& path) {
     DEBUG_CODE(logger::push("bios loaded", logger::type_t::info, "bios"));
 }
 
-void ps1::bios_del(bios_t* bios) {
+void ps1::bios_exit(bios_t* bios) {
     delete[] bios->data;
 }

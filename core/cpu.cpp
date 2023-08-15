@@ -700,6 +700,10 @@ void ps1::cpu_init(cpu_t* cpu, bus_t* bus) {
     cpu->instr_exec_cnt = 0;
 }
 
+void ps1::cpu_exit(cpu_t* cpu) {
+    // ! implement
+}
+
 void ps1::cpu_tick(cpu_t* cpu) {
     cpu->cpc = cpu->pc; // * update current program counter
 

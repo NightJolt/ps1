@@ -5,11 +5,11 @@
 
 namespace ps1 {
     struct ram_t {
-        uint8_t* data;
+        uint8_t* data = nullptr;
     };
 
     void ram_init(ram_t*);
-    void ram_del(ram_t*);
+    void ram_exit(ram_t*);
 
     FETCH_FN(ram_t) fetch(void* ram, mem_addr_t offset) {
         return *(type*)(((device*)ram)->data + offset);
