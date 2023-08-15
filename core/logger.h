@@ -11,6 +11,7 @@ namespace ps1::logger {
     };
 
     void push(const str_t&, type_t type, const str_t& = "all");
+    void spam(const str_t&);
     
     void display();
 }
