@@ -159,6 +159,8 @@ namespace ps1 {
     uint32_t bus_fetch32_debug(bus_t* bus, mem_addr_t mem_addr) {
         ASSERT(mem_addr % 4 == 0, "Unaligned memory access");
 
+        mem_addr = mask_addr(mem_addr);
+
         for (auto& device_info : bus->devices) {
             if (device_info.mem_range.contains(mem_addr)) {
                 return device_info.fetch32(device_info.device, device_info.mem_range.offset(mem_addr));

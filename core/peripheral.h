@@ -21,4 +21,6 @@ namespace ps1 {
         mem_addr_t start;
         mem_size_t size;
     };
+
+    mem_addr_t mask_addr(mem_addr_t);
 }

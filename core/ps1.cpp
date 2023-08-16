@@ -83,25 +83,16 @@ namespace {
             ps1::bus_connect(&console->bus, gpu_info);
         }
 
-        bios_info.mem_range = { ps1::BIOS_KSEG1, ps1::BIOS_SIZE };
+        bios_info.mem_range = { ps1::BIOS_ADDR, ps1::BIOS_SIZE };
         ps1::bus_connect(&console->bus, bios_info);
+        
+        ram_info.mem_range = { ps1::RAM_ADDR, ps1::RAM_SIZE };
+        ps1::bus_connect(&console->bus, ram_info);
 
-        // * ram
-        {
-            ram_info.mem_range = { ps1::RAM_KUSEG, ps1::RAM_SIZE };
-            ps1::bus_connect(&console->bus, ram_info);
-
-            ram_info.mem_range = { ps1::RAM_KSEG0, ps1::RAM_SIZE };
-            ps1::bus_connect(&console->bus, ram_info);
-
-            ram_info.mem_range = { ps1::RAM_KSEG1, ps1::RAM_SIZE };
-            ps1::bus_connect(&console->bus, ram_info);
-        }
-
-        hardreg_info.mem_range = { ps1::HARDREG_KUSEG, ps1::HARDREG_SIZE };
+        hardreg_info.mem_range = { ps1::HARDREG_ADDR, ps1::HARDREG_SIZE };
         ps1::bus_connect(&console->bus, hardreg_info);
 
-        expansion_info.mem_range = { ps1::EXPANSION1_KUSEG, ps1::EXPANSION1_SIZE };
+        expansion_info.mem_range = { ps1::EXPANSION1_ADDR, ps1::EXPANSION1_SIZE };
         ps1::bus_connect(&console->bus, expansion_info);
     }
 }

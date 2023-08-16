@@ -7,6 +7,7 @@ namespace ps1 {
     constexpr cpu_reg_t register_garbage_value = 0xDEADBEEF; // * magic value for debugging
     const cpu_instr_t nop = 0x00000000; // * no operation
 
+    // * status register bits
     constexpr uint32_t SR_ISOLATE_CACHE_BIT = 1 << 16; // * redirect all subsequent R/W to cache
     constexpr uint32_t SR_BOOT_EXCEPTION_VECTORS_BIT = 1 << 22; // * BEV bit, 0=RAM/KSEG0, 1=ROM/KSEG1
 
@@ -20,6 +21,13 @@ namespace ps1 {
 
     bool is_add_overflow(int32_t a, int32_t b) {
         return (a > 0 && b > 0 && a + b < 0) || (a < 0 && b < 0 && a + b > 0);
+    }
+}
+
+namespace ps1 {
+    // * all load and store operations are redirected to d-cache instead of main memory
+    bool is_cache_isolated(cpu_t* cpu) {
+        return cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT;
     }
 }
 
@@ -128,7 +136,7 @@ namespace ps1 {
     * 32 bit memory aligned store into bus
     */
     void op_sw(cpu_t* cpu, cpu_instr_t instr) {
-        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
+        if (is_cache_isolated(cpu)) return;
 
         mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
 
@@ -144,7 +152,7 @@ namespace ps1 {
     * 16 bit memory aligned store into bus
     */
     void op_sh(cpu_t* cpu, cpu_instr_t instr) {
-        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
+        if (is_cache_isolated(cpu)) return;
 
         mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
 
@@ -160,7 +168,7 @@ namespace ps1 {
     * 8 bit store into bus
     */
     void op_sb(cpu_t* cpu, cpu_instr_t instr) {
-        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
+        if (is_cache_isolated(cpu)) return;
 
         bus_store8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16), get_reg(cpu, instr.b.rt));
     }
@@ -170,7 +178,7 @@ namespace ps1 {
     * 32 bit memory aligned fetch from bus
     */
     void op_lw(cpu_t* cpu, cpu_instr_t instr) {
-        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // * should be redirected to cache
+        if (is_cache_isolated(cpu)) return;
 
         mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
 
@@ -186,7 +194,7 @@ namespace ps1 {
     * 16 bit memory aligned fetch from bus
     */
    void op_lh(cpu_t* cpu, cpu_instr_t instr) {
-        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // ? should be redirected to cache
+        if (is_cache_isolated(cpu)) return;
 
         mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
 
@@ -202,7 +210,7 @@ namespace ps1 {
     * 16 bit memory aligned fetch from bus
     */
    void op_lhu(cpu_t* cpu, cpu_instr_t instr) {
-        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // ? should be redirected to cache
+        if (is_cache_isolated(cpu)) return;
 
         mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
 
@@ -219,7 +227,7 @@ namespace ps1 {
     ? PROBABLY NOT AFFECTED BY ISOLATED CACHE BIT
     */
     void op_lb(cpu_t* cpu, cpu_instr_t instr) {
-        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // ? should be redirected to cache
+        if (is_cache_isolated(cpu)) return;
 
         set_reg_delayed(cpu, instr.b.rt, sign_extend_8(bus_fetch8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16))));
     }
@@ -230,7 +238,7 @@ namespace ps1 {
     ? PROBABLY NOT AFFECTED BY ISOLATED CACHE BIT
     */
     void op_lbu(cpu_t* cpu, cpu_instr_t instr) {
-        if (cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT) return; // ? should be redirected to cache
+        if (is_cache_isolated(cpu)) return;
 
         set_reg_delayed(cpu, instr.b.rt, bus_fetch8(cpu->bus, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16)));
     }

@@ -15,8 +15,6 @@
 #include "logger.h"
 #include "debugger.h"
 
-// ? use memory region masking instead ?
-
 int main() {
     ps1::ps1_t console;
     ps1::ps1_init(&console, "../bios/SCPH1001.bin");
