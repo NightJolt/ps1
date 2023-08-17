@@ -6,6 +6,7 @@
 #include <optional>
 #include <unordered_map>
 #include <functional>
+#include <set>
 // #include <cstdio>
 
 #include <glfw/glfw3.h>
@@ -53,6 +54,9 @@ using umap_t = std::unordered_map <T1, T2>;
 
 template <class T>
 using func_t = std::function <T>;
+
+template <class T>  
+using set_t = std::set <T>;
 
 
 namespace ps1 {

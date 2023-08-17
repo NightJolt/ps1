@@ -753,6 +753,13 @@ void ps1::cpu_tick(cpu_t* cpu) {
         // if (cpu->instr_exec_cnt == 79285) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
         // if (cpu->instr_exec_cnt == 79310) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
     }
+
+    
+    if (cpu->breakpoints.contains(cpu->pc)) {
+        cpu_set_state(cpu, cpu_state_t::sleeping);
+
+        return;
+    }
 }
 
 void ps1::cpu_set_state(cpu_t* cpu, cpu_state_t cpu_state) {

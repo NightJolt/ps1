@@ -359,7 +359,7 @@ namespace ps1 {
 
             ImGui::SameLine();
             ImGui::SetNextItemWidth(-1);
-            if (ImGui::InputScalar(" ", ImGuiDataType_U32, &addr_inp, &scroll_step, &scroll_max, "%x", ImGuiInputTextFlags_CharsHexadecimal)) {
+            if (ImGui::InputScalar("##input_addr", ImGuiDataType_U32, &addr_inp, &scroll_step, &scroll_max, "%x", ImGuiInputTextFlags_CharsHexadecimal)) {
                 if (addr_inp >= BIOS_ENTRY && addr_inp < BIOS_ENTRY + BIOS_SIZE && addr_inp % sizeof(cpu_instr_t) == 0) {
                      addr = addr_inp;
                 } else addr_inp = addr;
@@ -416,7 +416,7 @@ namespace ps1 {
 
             ImGui::SetNextItemWidth(-1);
 
-            if (ImGui::InputScalar(" ", ImGuiDataType_U32, &addr_inp, &scroll_step, &scroll_max, "%x", ImGuiInputTextFlags_CharsHexadecimal)) {
+            if (ImGui::InputScalar("##input_addr", ImGuiDataType_U32, &addr_inp, &scroll_step, &scroll_max, "%x", ImGuiInputTextFlags_CharsHexadecimal)) {
                 if (addr_inp >= 0 && addr_inp < BIOS_KSEG1 + BIOS_SIZE && addr_inp % sizeof(cpu_instr_t) == 0) {
                      addr = addr_inp;
                      update = true;
@@ -449,6 +449,44 @@ namespace ps1 {
 
         ImGui::End();
     }
+
+    void display_breakpoints_view(cpu_t* cpu) {
+        static mem_addr_t addr_inp = 0;
+        static mem_addr_t erase_value = 0;
+        static bool should_erase = false;
+
+        ImGui::Begin("Breakpoints");
+
+            ImGui::SetNextItemWidth(160);
+            ImGui::InputScalar("##input_addr", ImGuiDataType_U32, &addr_inp, nullptr, nullptr, "%x", ImGuiInputTextFlags_CharsHexadecimal);
+            ImGui::SameLine();
+            if (ImGui::Button("Add")) {
+                cpu->breakpoints.emplace(addr_inp);
+            }
+            
+            ImGui::Spacing();
+
+            ImGui::BeginChild("breakpoints_view");
+            
+            for (mem_addr_t addr : cpu->breakpoints) {
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("0x%08X", addr);
+                ImGui::SameLine();
+                if (ImGui::Button(("Remove##" + std::to_string(addr)).c_str())) {
+                    erase_value = addr;
+                    should_erase = true;
+                }
+            }
+
+            if (should_erase) {
+                cpu->breakpoints.erase(erase_value);
+                should_erase = false;
+            }
+
+            ImGui::EndChild();
+
+        ImGui::End();
+    }
 }
 
 void ps1::debugger::display(ps1_t* console) {
@@ -456,5 +494,6 @@ void ps1::debugger::display(ps1_t* console) {
     display_cpu_view(&console->cpu, &console->bus);
     display_instr_view(&console->cpu, &console->bus);
     display_memory_view(&console->bus);
+    display_breakpoints_view(&console->cpu);
     logger::display();
 }

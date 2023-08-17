@@ -167,6 +167,7 @@ namespace ps1 {
 
         // ! debug data
         uint32_t instr_exec_cnt; // * number of instructions executed
+        set_t<mem_addr_t> breakpoints; // * breakpoints
     };
 
      // * init scpu state
