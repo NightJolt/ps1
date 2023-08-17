@@ -18,12 +18,18 @@ namespace {
     str_t to_bin(uint32_t val) {
         return "0b" + byte_to_bin(val >> 24) + byte_to_bin(val >> 16) + byte_to_bin(val >> 8) + byte_to_bin(val);
     }
+
+    const uint32_t COL_GREEN { IM_COL32(100, 255, 59, 70) };
+    const uint32_t COL_YELLOW { IM_COL32(255, 235, 59, 70) };
+
+    constexpr uint32_t scroll_step = 4;
+    constexpr uint32_t scroll_max = 100;
 }
 
 namespace ps1 {
     void display_emulation_view(ps1_t* console) {
-        static char save_state_path[128] = "state.bin";
-        static char load_state_path[128] = "state.bin";
+        static char save_state_path[128] = "saves/state.bin";
+        static char load_state_path[128] = "saves/state.bin";
 
         ImGui::Begin("Emulation");
 
@@ -52,16 +58,21 @@ namespace ps1 {
         ImGui::End();
     }
 
-    void display_instr(mem_addr_t addr, uint32_t instr, bool active = false) {
+    void display_instr(cpu_t* cpu, mem_addr_t addr, uint32_t instr) {
         static char addr_buffer[12];
         static char instr_buffer[12];
 
         sprintf(addr_buffer, "0x%08X", addr);
         sprintf(instr_buffer, "0x%08X", instr);
 
-        if (active) {
-            ImGui::PushStyleColor(ImGuiCol_TableRowBg, IM_COL32(255, 235, 59, 150));
-            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, IM_COL32(255, 235, 59, 150));
+        if (cpu->cpc == addr) {
+            ImGui::PushStyleColor(ImGuiCol_TableRowBg, COL_GREEN);
+            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, COL_GREEN);
+        }
+
+        if (cpu->pc == addr) {
+            ImGui::PushStyleColor(ImGuiCol_TableRowBg, COL_YELLOW);
+            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, COL_YELLOW);
         }
 
         ImGui::TableNextColumn();
@@ -75,7 +86,12 @@ namespace ps1 {
         
         ImGui::TableNextRow();
 
-        if (active) {
+        if (cpu->cpc == addr) {
+            ImGui::PopStyleColor();
+            ImGui::PopStyleColor();
+        }
+
+        if (cpu->pc == addr) {
             ImGui::PopStyleColor();
             ImGui::PopStyleColor();
         }
@@ -98,7 +114,7 @@ namespace ps1 {
         ImGui::TextWrapped(dec_buffer);
     }
 
-    void display_ram(uint32_t addr, uint32_t value) {
+    void display_memory(uint32_t addr, uint32_t value, bool highlight) {
         static char addr_buffer[12];
         static char hex_buffer[12];
         static char dec_buffer[12];
@@ -106,6 +122,11 @@ namespace ps1 {
         sprintf(addr_buffer, "0x%08X", addr);
         sprintf(hex_buffer, "0x%08X", value);
         sprintf(dec_buffer, "%u", value);
+
+        if (highlight) {
+            ImGui::PushStyleColor(ImGuiCol_TableRowBg, COL_YELLOW);
+            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, COL_YELLOW);
+        }
 
         ImGui::TableNextColumn();
         ImGui::TextWrapped(addr_buffer);
@@ -115,6 +136,13 @@ namespace ps1 {
         
         ImGui::TableNextColumn();
         ImGui::TextWrapped(dec_buffer);
+        
+        ImGui::TableNextRow();
+
+        if (highlight) {
+            ImGui::PopStyleColor();
+            ImGui::PopStyleColor();
+        }
     }
     
     str_t describe_reg(uint32_t i) {
@@ -205,7 +233,7 @@ namespace ps1 {
                 }
             }
 
-            if (ImGui::BeginTable("delay_slot", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
+            if (ImGui::BeginTable("cpu_status", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
                 ImGui::TableSetupColumn(nullptr, 0, 1);
                 ImGui::TableSetupColumn(nullptr, 0, 1);
                 
@@ -239,7 +267,7 @@ namespace ps1 {
 
             if (ImGui::BeginTable("delay_slot", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
                 ImGui::TableSetupColumn("Delay Slot", 0, 4);
-                ImGui::TableSetupColumn("Address", 0, 4);
+                ImGui::TableSetupColumn("Addr/Val", 0, 4);
                 ImGui::TableSetupColumn("Value", 0, 13);
 
                 ImGui::TableHeadersRow();
@@ -248,19 +276,18 @@ namespace ps1 {
                     ImGui::TableNextColumn();
                     ImGui::TextWrapped("Instruction");
 
-                    static char instr_buffer[12];
-                    sprintf(instr_buffer, "0x%08X", bus_fetch32_debug(bus, cpu->npc));
+                    uint32_t instr = bus_fetch32_debug(bus, cpu->pc);
                     
                     ImGui::TableNextColumn();
-                    ImGui::TextWrapped(instr_buffer);
+                    ImGui::TextWrapped("0x%08X", instr);
                     
                     ImGui::TableNextColumn();
-                    ImGui::TextWrapped(to_bin((uint32_t)bus_fetch32_debug(bus, cpu->npc)).c_str());
+                    ImGui::TextWrapped(to_bin(instr).c_str());
                 }
                 
                 {
                     ImGui::TableNextColumn();
-                    ImGui::TextWrapped("Load");
+                    ImGui::TextWrapped("Value");
                     
                     ImGui::TableNextColumn();
                     ImGui::TextWrapped(("R" + std::to_string(cpu->load_delay_target)).c_str());
@@ -318,56 +345,95 @@ namespace ps1 {
     }
 
     void display_instr_view(cpu_t* cpu, bus_t* bus) {
-        static constexpr uint32_t instr_radius = 24;
+        static mem_addr_t addr_inp = BIOS_ENTRY;
+        static mem_addr_t addr = BIOS_ENTRY;
+        static bool follow_pc = true;
+        static bool auto_update = false;
+        bool update = false;
 
         ImGui::Begin("Instructions");
 
-            if (ImGui::BeginTable("InstructionsTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
-                ImGui::TableSetupColumn(nullptr, 0, 4);
-                ImGui::TableSetupColumn(nullptr, 0, 4);
-                ImGui::TableSetupColumn(nullptr, 0, 13);
-                
-                for (mem_addr_t addr = cpu->pc - instr_radius * sizeof(cpu_instr_t); addr < cpu->pc; addr += sizeof(cpu_instr_t)) {
-                    display_instr(addr, bus_fetch32_debug(bus, addr));
+            ImGui::Checkbox("Follow PC", &follow_pc);
+            ImGui::SameLine();
+            ImGui::Checkbox("Auto Update", &auto_update);
+
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(-1);
+            if (ImGui::InputScalar(" ", ImGuiDataType_U32, &addr_inp, &scroll_step, &scroll_max, "%x", ImGuiInputTextFlags_CharsHexadecimal)) {
+                if (addr_inp >= BIOS_ENTRY && addr_inp < BIOS_ENTRY + BIOS_SIZE && addr_inp % sizeof(cpu_instr_t) == 0) {
+                     addr = addr_inp;
+                } else addr_inp = addr;
+            }
+
+            ImGui::BeginChild("instrcution_view");
+
+                if (ImGui::BeginTable("instruction_table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
+                    ImGui::TableSetupColumn(nullptr, 0, 4);
+                    ImGui::TableSetupColumn(nullptr, 0, 4);
+                    ImGui::TableSetupColumn(nullptr, 0, 13);
+
+                    static constexpr uint32_t instr_radius = 24;
+
+                    if (follow_pc) {
+                        addr = cpu->cpc;
+                        update = cpu->state == cpu_state_t::running;
+                    }
+
+                    if (auto_update) {
+                        update = true;
+                    }
+                    
+                    for (mem_addr_t offset = addr - instr_radius * sizeof(cpu_instr_t); offset < addr; offset += sizeof(cpu_instr_t)) {
+                        display_instr(cpu, offset, bus_fetch32_debug(bus, offset));
+                    }
+
+                    display_instr(cpu, addr, bus_fetch32_debug(bus, addr));
+                    
+                    for (mem_addr_t offset = addr + sizeof(cpu_instr_t); offset <= addr + instr_radius * sizeof(cpu_instr_t); offset += sizeof(cpu_instr_t)) {
+                        display_instr(cpu, offset, bus_fetch32_debug(bus, offset));
+                    }
+                    
+                    ImGui::EndTable();
                 }
 
-                display_instr(cpu->pc, bus_fetch32_debug(bus, cpu->pc), true);
-                
-                for (mem_addr_t addr = cpu->pc + sizeof(cpu_instr_t); addr <= cpu->pc + instr_radius * sizeof(cpu_instr_t); addr += sizeof(cpu_instr_t)) {
-                    display_instr(addr, bus_fetch32_debug(bus, addr));
+                if (update) {
+                    ImGui::SetScrollHereY(.5f);
+
+                    update = false;
                 }
-                
-                ImGui::EndTable();
-            }
+
+            ImGui::EndChild();
 
         ImGui::End();
     }
 
-    void display_ram_view(ram_t* ram) {
-        static int32_t addr_inp = 0;
-        static int32_t addr = 0;
+    void display_memory_view(bus_t* bus) {
+        static mem_addr_t addr_inp = 0;
+        static mem_addr_t addr = 0;
         bool update = false;
 
-        ImGui::Begin("RAM");
+        ImGui::Begin("Memory");
 
             ImGui::SetNextItemWidth(-1);
 
-            if (ImGui::InputInt(" ", &addr_inp, sizeof(cpu_instr_t), sizeof(cpu_instr_t) * 25)) {
-                if (addr_inp >= 0 && addr_inp < RAM_SIZE && addr_inp % sizeof(cpu_instr_t) == 0) addr = addr_inp, update = true;
-                else addr_inp = addr;
+            if (ImGui::InputScalar(" ", ImGuiDataType_U32, &addr_inp, &scroll_step, &scroll_max, "%x", ImGuiInputTextFlags_CharsHexadecimal)) {
+                if (addr_inp >= 0 && addr_inp < BIOS_KSEG1 + BIOS_SIZE && addr_inp % sizeof(cpu_instr_t) == 0) {
+                     addr = addr_inp;
+                     update = true;
+                } else addr_inp = addr;
             }
 
-            ImGui::BeginChild("ram_view");
+            ImGui::BeginChild("memory_view");
 
-                if (ImGui::BeginTable("ram", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
+                if (ImGui::BeginTable("memory", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp)) {
                     ImGui::TableSetupColumn(nullptr, 0, 1);
                     ImGui::TableSetupColumn(nullptr, 0, 1);
                     ImGui::TableSetupColumn(nullptr, 0, 1);
 
-                    static int32_t radius = sizeof(cpu_instr_t) * 32;
+                    static uint32_t radius = sizeof(cpu_instr_t) * 32;
                     
-                    for (mem_addr_t offset = std::max(addr - radius, 0); offset <= std::min(addr + radius, (int32_t)RAM_SIZE); offset += sizeof(cpu_instr_t)) {
-                        display_ram(offset, *(uint32_t*)(ram->data + offset));
+                    for (mem_addr_t offset = addr >= radius ? addr - radius : 0; offset <= std::min(addr + radius, (BIOS_KSEG1 + BIOS_SIZE - 1)); offset += sizeof(cpu_instr_t)) {
+                        display_memory(offset, bus_fetch32_debug(bus, offset), offset == addr);
                     }
                     
                     ImGui::EndTable();
@@ -389,6 +455,6 @@ void ps1::debugger::display(ps1_t* console) {
     display_emulation_view(console);
     display_cpu_view(&console->cpu, &console->bus);
     display_instr_view(&console->cpu, &console->bus);
-    display_ram_view(&console->ram);
+    display_memory_view(&console->bus);
     logger::display();
 }

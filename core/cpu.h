@@ -3,6 +3,7 @@
 #include "defs.h"
 
 namespace ps1 {
+#pragma pack(push, 1) // ! it must always be 4 bytes
     union cpu_instr_t {
         cpu_instr_t() {}
         cpu_instr_t(uint32_t value) : raw(value) {}
@@ -34,6 +35,7 @@ namespace ps1 {
             uint32_t opcode : 6;
         } c;
     };
+#pragma pack(pop)
 
     enum struct cpu_opcode_t {
         SPECIAL = 0b000000,

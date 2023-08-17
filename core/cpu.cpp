@@ -29,6 +29,10 @@ namespace ps1 {
     bool is_cache_isolated(cpu_t* cpu) {
         return cpu->c0regs[12] & SR_ISOLATE_CACHE_BIT;
     }
+
+    mem_addr_t get_exception_handler_addr(cpu_t* cpu) {
+        return cpu->c0regs[12] & SR_BOOT_EXCEPTION_VECTORS_BIT ? 0xBFC00180 : 0x80000080;
+    }
 }
 
 namespace ps1 {
@@ -72,7 +76,7 @@ namespace ps1 {
     * throw exception
     */
     void throw_exception(cpu_t* cpu, exception_t cause) {
-        mem_addr_t handler_func_addr = cpu->c0regs[12] & SR_BOOT_EXCEPTION_VECTORS_BIT ? 0xBFC00180 : 0x80000080;
+        mem_addr_t handler_func_addr = get_exception_handler_addr(cpu);
 
         // * push no interrupt/kernel mode to interrupt/kernel-user mode stack
         cpu_reg_t status = cpu->c0regs[12];
@@ -224,7 +228,6 @@ namespace ps1 {
     /*
     * load byte
     * 8 bit fetch from bus
-    ? PROBABLY NOT AFFECTED BY ISOLATED CACHE BIT
     */
     void op_lb(cpu_t* cpu, cpu_instr_t instr) {
         if (is_cache_isolated(cpu)) return;
@@ -235,7 +238,6 @@ namespace ps1 {
     /*
     * load byte unsigned
     * 8 bit fetch from bus
-    ? PROBABLY NOT AFFECTED BY ISOLATED CACHE BIT
     */
     void op_lbu(cpu_t* cpu, cpu_instr_t instr) {
         if (is_cache_isolated(cpu)) return;
@@ -695,8 +697,8 @@ void ps1::cpu_init(cpu_t* cpu, bus_t* bus) {
     cpu->hi = register_garbage_value;
     cpu->lo = register_garbage_value;
 
-    cpu->cpc = 0;
     cpu->pc = BIOS_ENTRY; // * target BIOS entry function
+    cpu->cpc = cpu->pc;
     cpu->npc = cpu->pc + sizeof(cpu_instr_t);
 
     set_reg_delayed(cpu, 0, 0);
@@ -741,6 +743,7 @@ void ps1::cpu_tick(cpu_t* cpu) {
 
     // ! debug breakpoints
     {
+        // if (bus_fetch32(cpu->bus, cpu->pc) == 0x0040c827) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
         // if (cpu->pc < BIOS_ENTRY) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
         // if (cpu->instr_exec_cnt == 71540) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);
         // if (cpu->pc == 0x000005bc) ps1::cpu_set_state(cpu, ps1::cpu_state_t::sleeping);

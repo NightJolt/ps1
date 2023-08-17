@@ -14,6 +14,8 @@ GLFWwindow* ps1::render::init() {
     ImGui_ImplOpenGL3_Init("#version 330");
     ImGui::StyleColorsDark();
 
+    ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
+
     return ::window;
 }
 
