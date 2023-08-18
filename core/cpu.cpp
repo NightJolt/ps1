@@ -22,6 +22,10 @@ namespace ps1 {
     bool is_add_overflow(int32_t a, int32_t b) {
         return (a > 0 && b > 0 && a + b < 0) || (a < 0 && b < 0 && a + b > 0);
     }
+
+    bool is_sub_overflow(int32_t a, int32_t b) {
+        return (a > 0 && b < 0 && a - b < 0) || (a < 0 && b > 0 && a - b > 0);
+    }
 }
 
 namespace ps1 {
@@ -69,6 +73,7 @@ namespace ps1 {
         load = 0x4,
         store = 0x5,
         syscall = 0x8,
+        brk = 0x9,
         overflow = 0xC,
     };
 
@@ -109,6 +114,14 @@ namespace ps1 {
     */
     void op_syscall(cpu_t* cpu, cpu_instr_t instr) {
         throw_exception(cpu, exception_t::syscall);
+    }
+
+    /*
+    * break
+    * used for software breakpoints
+    */
+    void op_break(cpu_t* cpu, cpu_instr_t instr) {
+        throw_exception(cpu, exception_t::brk);
     }
 
     /*
@@ -296,6 +309,7 @@ namespace ps1 {
     /*
     * add immediate unsigned
     * adds sign extended immediate value to register
+    * unsigned just means we do not care about overflow
     */
     void op_addiu(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.b.rt, get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16));
@@ -320,13 +334,14 @@ namespace ps1 {
     /*
     * add unsigned
     * adds two registers
+    * unsigned just means we do not care about overflow
     */
     void op_addu(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) + get_reg(cpu, instr.a.rt));
     }
 
     /*
-    * add unsigned
+    * add
     * adds two registers
     * must throw and exeption when overflow occurs
     */
@@ -338,6 +353,29 @@ namespace ps1 {
             throw_exception(cpu, exception_t::overflow);
         } else {
             set_reg(cpu, instr.a.rd, a + b);
+        }
+    }
+
+    /*
+    * subtract unsigned
+    * unsigned just means we do not care about overflow
+    */
+    void op_subu(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) - get_reg(cpu, instr.a.rt));
+    }
+
+    /*
+    * subtract unsigned
+    * must throw and exeption when overflow occurs
+    */
+    void op_sub(cpu_t* cpu, cpu_instr_t instr) {
+        int32_t a = get_reg(cpu, instr.a.rs);
+        int32_t b = get_reg(cpu, instr.a.rt);
+
+        if (is_sub_overflow(a, b)) {
+            throw_exception(cpu, exception_t::overflow);
+        } else {
+            set_reg(cpu, instr.a.rd, a - b);
         }
     }
 
@@ -363,6 +401,14 @@ namespace ps1 {
     */
     void op_xor(cpu_t* cpu, cpu_instr_t instr) {
         set_reg(cpu, instr.a.rt, get_reg(cpu, instr.a.rs) ^ get_reg(cpu, instr.a.rt));
+    }
+
+    /*
+    * xor immediate
+    * applies bitwise xor operator to target register and immediate value
+    */
+    void op_xori(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.b.rt, get_reg(cpu, instr.b.rs) ^ instr.b.imm16);
     }
 
     /*
@@ -512,13 +558,6 @@ namespace ps1 {
     }
 
     /*
-    * subtract unsigned
-    */
-    void op_subu(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) - get_reg(cpu, instr.a.rt));
-    }
-
-    /*
     * divide
     TODO: needs to be properly emulated for correct timing
     */
@@ -553,6 +592,20 @@ namespace ps1 {
             cpu->lo = n / d;
             cpu->hi = n % d;
         }
+    }
+
+    /*
+    * multiply
+    TODO: needs to be properly emulated for correct timing
+    */
+    void op_mult(cpu_t* cpu, cpu_instr_t instr) {
+        int64_t x = (int32_t)get_reg(cpu, instr.a.rs);
+        int64_t y = (int32_t)get_reg(cpu, instr.a.rt);
+
+        uint64_t res = x * y;
+
+        cpu->lo = (uint32_t)res;
+        cpu->hi = (uint32_t)(res >> 32);
     }
 
     /*
@@ -647,6 +700,7 @@ namespace ps1 {
             { cpu_subfunc_t::SRAV, op_srav },
             { cpu_subfunc_t::SRLV, op_srlv },
             { cpu_subfunc_t::SYSCALL, op_syscall },
+            { cpu_subfunc_t::BREAK, op_break },
             { cpu_subfunc_t::OR, op_or },
             { cpu_subfunc_t::XOR, op_xor },
             { cpu_subfunc_t::AND, op_and },
@@ -657,11 +711,13 @@ namespace ps1 {
             { cpu_subfunc_t::JR, op_jr },
             { cpu_subfunc_t::JALR, op_jalr },
             { cpu_subfunc_t::SUBU, op_subu },
+            { cpu_subfunc_t::SUB, op_sub },
             { cpu_subfunc_t::SRA, op_sra },
             { cpu_subfunc_t::SRL, op_srl },
             { cpu_subfunc_t::DIV, op_div },
             { cpu_subfunc_t::DIVU, op_divu },
             { cpu_subfunc_t::MULTU, op_multu },
+            { cpu_subfunc_t::MULT, op_mult },
             { cpu_subfunc_t::MFLO, op_mflo },
             { cpu_subfunc_t::MFHI, op_mfhi },
             { cpu_subfunc_t::MTLO, op_mtlo },
@@ -689,6 +745,7 @@ namespace ps1 {
             { cpu_opcode_t::LUI, op_lui },
             { cpu_opcode_t::ANDI, op_andi },
             { cpu_opcode_t::ORI, op_ori },
+            { cpu_opcode_t::XORI, op_xori },
             { cpu_opcode_t::SW, op_sw },
             { cpu_opcode_t::SH, op_sh },
             { cpu_opcode_t::SB, op_sb },
