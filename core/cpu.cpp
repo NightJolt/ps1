@@ -342,6 +342,14 @@ namespace ps1 {
     }
 
     /*
+    * xor
+    * bitwise xor two registers
+    */
+    void op_xor(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rt, get_reg(cpu, instr.a.rs) ^ get_reg(cpu, instr.a.rt));
+    }
+
+    /*
     * and
     * bitwise and two registers
     */
@@ -608,6 +616,7 @@ namespace ps1 {
             { cpu_subfunc_t::SLLV, op_sllv },
             { cpu_subfunc_t::SYSCALL, op_syscall },
             { cpu_subfunc_t::OR, op_or },
+            { cpu_subfunc_t::XOR, op_xor },
             { cpu_subfunc_t::AND, op_and },
             { cpu_subfunc_t::SLTU, op_sltu },
             { cpu_subfunc_t::SLT, op_slt },
