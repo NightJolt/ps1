@@ -270,11 +270,27 @@ namespace ps1 {
     }
 
     /*
+    * shift right logical variable
+    * does not preserve sign bit
+    */
+    void op_srlv(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rt) >> (get_reg(cpu, instr.a.rs) & 0x1F));
+    }
+
+    /*
     * shift right arithmetic
     * preserves sign bit
     */
     void op_sra(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, instr.a.rd, ((int32_t)get_reg(cpu, instr.a.rt)) >> instr.a.imm5);
+        set_reg(cpu, instr.a.rd, ((int32_t)get_reg(cpu, instr.a.rt)) >> instr.a.imm5); // * arithmetic means signed value
+    }
+
+    /*
+    * shift right arithmetic variable
+    * preserves sign bit
+    */
+    void op_srav(cpu_t* cpu, cpu_instr_t instr) {
+        set_reg(cpu, instr.a.rd, ((int32_t)get_reg(cpu, instr.a.rt)) >> (get_reg(cpu, instr.a.rs) & 0x1F));
     }
 
     /*
@@ -540,6 +556,20 @@ namespace ps1 {
     }
 
     /*
+    * multiply unsigned
+    TODO: needs to be properly emulated for correct timing
+    */
+    void op_multu(cpu_t* cpu, cpu_instr_t instr) {
+        uint64_t x = get_reg(cpu, instr.a.rs);
+        uint64_t y = get_reg(cpu, instr.a.rt);
+
+        uint64_t res = x * y;
+
+        cpu->lo = (uint32_t)res;
+        cpu->hi = (uint32_t)(res >> 32);
+    }
+
+    /*
     * move from LO
     TODO: will stall if div is not finished
     */
@@ -614,6 +644,8 @@ namespace ps1 {
         static umap_t <cpu_subfunc_t, cpu_instr_handler_func> opmap = {
             { cpu_subfunc_t::SLL, op_sll },
             { cpu_subfunc_t::SLLV, op_sllv },
+            { cpu_subfunc_t::SRAV, op_srav },
+            { cpu_subfunc_t::SRLV, op_srlv },
             { cpu_subfunc_t::SYSCALL, op_syscall },
             { cpu_subfunc_t::OR, op_or },
             { cpu_subfunc_t::XOR, op_xor },
@@ -629,6 +661,7 @@ namespace ps1 {
             { cpu_subfunc_t::SRL, op_srl },
             { cpu_subfunc_t::DIV, op_div },
             { cpu_subfunc_t::DIVU, op_divu },
+            { cpu_subfunc_t::MULTU, op_multu },
             { cpu_subfunc_t::MFLO, op_mflo },
             { cpu_subfunc_t::MFHI, op_mfhi },
             { cpu_subfunc_t::MTLO, op_mtlo },

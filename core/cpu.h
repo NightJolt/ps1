@@ -92,8 +92,8 @@ namespace ps1 {
         SRA = 0b000011,
         SLLV = 0b000100,
         // * N/A gap
-        // SRLV = 0b000110,
-        // SRAV = 0b000111,
+        SRLV = 0b000110,
+        SRAV = 0b000111,
         JR = 0b001000,
         JALR = 0b001001,
         // * N/A gap
@@ -106,7 +106,7 @@ namespace ps1 {
         MTLO = 0b010011,
         // * N/A gap
         // MULT = 0b011000,
-        // MULTU = 0b011001,
+        MULTU = 0b011001,
         DIV = 0b011010,
         DIVU = 0b011011,
         // * N/A gap
