@@ -74,6 +74,7 @@ namespace ps1 {
         store = 0x5,
         syscall = 0x8,
         brk = 0x9,
+        cop_absent = 0xB,
         overflow = 0xC,
     };
 
@@ -659,6 +660,97 @@ namespace ps1 {
         set_reg(cpu, instr.a.rd, !(get_reg(cpu, instr.a.rs) | get_reg(cpu, instr.a.rt)));
     }
 
+    /*
+    * load word left
+    TODO: probably should not be ignoring load delay
+    ! needs testing
+    */
+    void op_lwl(cpu_t* cpu, cpu_instr_t instr) {
+        mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
+        mem_addr_t aligned_addr = addr & ~0x3;
+
+        uint32_t aligned_val = bus_fetch32(cpu->bus, aligned_addr);
+        uint32_t old_val = get_reg(cpu, instr.b.rt);
+
+        uint32_t mod4 = addr & 0x3;
+        uint32_t new_val = (old_val & (~0u >> ((mod4 + 1) << 3))) | (aligned_val << ((3 - mod4) << 3));
+
+        set_reg(cpu, instr.b.rt, new_val); // ! ignoring load delay
+    }
+
+    /*
+    * load word right
+    TODO: probably should not be ignoring load delay
+    ! needs testing
+    */
+    void op_lwr(cpu_t* cpu, cpu_instr_t instr) {
+        mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
+        mem_addr_t aligned_addr = addr & ~0x3;
+
+        uint32_t aligned_val = bus_fetch32(cpu->bus, aligned_addr);
+        uint32_t old_val = get_reg(cpu, instr.b.rt);
+
+        uint32_t mod4 = addr & 0x3;
+        uint32_t new_val = (old_val & ~(~0u >> (mod4 << 3))) | (aligned_val >> (mod4 << 3));
+
+        set_reg(cpu, instr.b.rt, new_val); // ! ignoring load delay
+    }
+
+    /*
+    * store word left
+    ! needs testing
+    */
+    void op_swl(cpu_t* cpu, cpu_instr_t instr) {
+        mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
+        mem_addr_t aligned_addr = addr & ~0x3;
+
+        uint32_t aligned_val = bus_fetch32(cpu->bus, aligned_addr);
+        uint32_t old_val = get_reg(cpu, instr.b.rt);
+
+        uint32_t mod4 = addr & 0x3;
+        uint32_t new_val = (old_val & (~0u & ~(~0u >> ((3 - mod4) << 3)))) | (aligned_val >> ((3 - mod4) << 3));
+
+        bus_store32(cpu->bus, aligned_addr, new_val); // ! probably need to check for exception
+    }
+
+    /*
+    * store word right
+    ! needs testing
+    */
+    void op_swr(cpu_t* cpu, cpu_instr_t instr) {
+        mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
+        mem_addr_t aligned_addr = addr & ~0x3;
+
+        uint32_t aligned_val = bus_fetch32(cpu->bus, aligned_addr);
+        uint32_t old_val = get_reg(cpu, instr.b.rt);
+
+        uint32_t mod4 = addr & 0x3;
+        uint32_t new_val = (old_val & (~0u >> ((mod4 + 1) << 3))) | (aligned_val << (mod4 << 3));
+
+        bus_store32(cpu->bus, aligned_addr, new_val); // ! probably need to check for exception
+    }
+
+    /*
+    * load/store word from/into cop0, cop1, cop3
+    */
+    void op_lswc_absent(cpu_t* cpu, cpu_instr_t instr) {
+        throw_exception(cpu, exception_t::cop_absent);
+    }
+
+    /*
+    * load word from cop2
+    */
+    void op_lwc2(cpu_t* cpu, cpu_instr_t instr) {
+        DEBUG_CODE(logger::push("loading from cop2", logger::type_t::error, "cpu"));
+    }
+
+    /*
+    * store word into cop2
+    */
+    void op_swc2(cpu_t* cpu, cpu_instr_t instr) {
+        DEBUG_CODE(logger::push("storing into cop2", logger::type_t::error, "cpu"));
+    }
+
     // handle invalid cpu instruction
     void execute_err(cpu_t* cpu, cpu_instr_t instr) {
         DEBUG_CODE(char err_msg_buffer[64]);
@@ -692,37 +784,52 @@ namespace ps1 {
         }
     }
 
+    // * cop1 not implemented on ps1
+    void execute_cop1(cpu_t* cpu, cpu_instr_t instr) {
+        throw_exception(cpu, exception_t::cop_absent);
+    }
+
+    // * cop2 not implemented on ps1
+    void execute_cop2(cpu_t* cpu, cpu_instr_t instr) {
+        DEBUG_CODE(execute_err(cpu, instr));
+    }
+
+    // * cop3 not implemented on ps1
+    void execute_cop3(cpu_t* cpu, cpu_instr_t instr) {
+        throw_exception(cpu, exception_t::cop_absent);
+    }
+
     // * execute special instruction
     void execute_special(cpu_t* cpu, cpu_instr_t instr) {
         static umap_t <cpu_subfunc_t, cpu_instr_handler_func> opmap = {
             { cpu_subfunc_t::SLL, op_sll },
+            { cpu_subfunc_t::SRL, op_srl },
+            { cpu_subfunc_t::SRA, op_sra },
             { cpu_subfunc_t::SLLV, op_sllv },
-            { cpu_subfunc_t::SRAV, op_srav },
             { cpu_subfunc_t::SRLV, op_srlv },
-            { cpu_subfunc_t::SYSCALL, op_syscall },
-            { cpu_subfunc_t::BREAK, op_break },
-            { cpu_subfunc_t::OR, op_or },
-            { cpu_subfunc_t::XOR, op_xor },
-            { cpu_subfunc_t::AND, op_and },
-            { cpu_subfunc_t::SLTU, op_sltu },
-            { cpu_subfunc_t::SLT, op_slt },
-            { cpu_subfunc_t::ADDU, op_addu },
-            { cpu_subfunc_t::ADD, op_add },
+            { cpu_subfunc_t::SRAV, op_srav },
             { cpu_subfunc_t::JR, op_jr },
             { cpu_subfunc_t::JALR, op_jalr },
-            { cpu_subfunc_t::SUBU, op_subu },
-            { cpu_subfunc_t::SUB, op_sub },
-            { cpu_subfunc_t::SRA, op_sra },
-            { cpu_subfunc_t::SRL, op_srl },
+            { cpu_subfunc_t::SYSCALL, op_syscall },
+            { cpu_subfunc_t::BREAK, op_break },
+            { cpu_subfunc_t::MFHI, op_mfhi },
+            { cpu_subfunc_t::MTHI, op_mthi },
+            { cpu_subfunc_t::MFLO, op_mflo },
+            { cpu_subfunc_t::MTLO, op_mtlo },
+            { cpu_subfunc_t::MULT, op_mult },
+            { cpu_subfunc_t::MULTU, op_multu },
             { cpu_subfunc_t::DIV, op_div },
             { cpu_subfunc_t::DIVU, op_divu },
-            { cpu_subfunc_t::MULTU, op_multu },
-            { cpu_subfunc_t::MULT, op_mult },
-            { cpu_subfunc_t::MFLO, op_mflo },
-            { cpu_subfunc_t::MFHI, op_mfhi },
-            { cpu_subfunc_t::MTLO, op_mtlo },
-            { cpu_subfunc_t::MTHI, op_mthi },
+            { cpu_subfunc_t::ADD, op_add },
+            { cpu_subfunc_t::ADDU, op_addu },
+            { cpu_subfunc_t::SUB, op_sub },
+            { cpu_subfunc_t::SUBU, op_subu },
+            { cpu_subfunc_t::AND, op_and },
+            { cpu_subfunc_t::OR, op_or },
+            { cpu_subfunc_t::XOR, op_xor },
             { cpu_subfunc_t::NOR, op_nor },
+            { cpu_subfunc_t::SLT, op_slt },
+            { cpu_subfunc_t::SLTU, op_sltu },
 
         };
 
@@ -742,29 +849,44 @@ namespace ps1 {
         static umap_t <cpu_opcode_t, cpu_instr_handler_func> opmap = {
             { cpu_opcode_t::SPECIAL, execute_special },
             { cpu_opcode_t::BBBB, op_bbbb },
-            { cpu_opcode_t::LUI, op_lui },
+            { cpu_opcode_t::J, op_j },
+            { cpu_opcode_t::JAL, op_jal },
+            { cpu_opcode_t::BEQ, op_beq },
+            { cpu_opcode_t::BNE, op_bne },
+            { cpu_opcode_t::BLEZ, op_blez },
+            { cpu_opcode_t::BGTZ, op_bgtz },
+            { cpu_opcode_t::ADDI, op_addi },
+            { cpu_opcode_t::ADDIU, op_addiu },
+            { cpu_opcode_t::SLTI, op_slti },
+            { cpu_opcode_t::SLTIU, op_sltiu },
             { cpu_opcode_t::ANDI, op_andi },
             { cpu_opcode_t::ORI, op_ori },
             { cpu_opcode_t::XORI, op_xori },
-            { cpu_opcode_t::SW, op_sw },
-            { cpu_opcode_t::SH, op_sh },
-            { cpu_opcode_t::SB, op_sb },
-            { cpu_opcode_t::LW, op_lw },
-            { cpu_opcode_t::LH, op_lh },
-            { cpu_opcode_t::LHU, op_lhu },
+            { cpu_opcode_t::LUI, op_lui },
+            { cpu_opcode_t::COP0, execute_cop0 },
+            { cpu_opcode_t::COP1, execute_cop1 },
+            { cpu_opcode_t::COP2, execute_cop2 },
+            { cpu_opcode_t::COP3, execute_cop3 },
             { cpu_opcode_t::LB, op_lb },
+            { cpu_opcode_t::LH, op_lh },
+            { cpu_opcode_t::LWL, op_lwl },
+            { cpu_opcode_t::LW, op_lw },
             { cpu_opcode_t::LBU, op_lbu },
-            { cpu_opcode_t::ADDIU, op_addiu },
-            { cpu_opcode_t::ADDI, op_addi },
-            { cpu_opcode_t::J, op_j },
-            { cpu_opcode_t::JAL, op_jal },
-            { cpu_opcode_t::BNE, op_bne },
-            { cpu_opcode_t::BEQ, op_beq },
-            { cpu_opcode_t::BGTZ, op_bgtz },
-            { cpu_opcode_t::BLEZ, op_blez },
-            { cpu_opcode_t::SLTI, op_slti },
-            { cpu_opcode_t::SLTIU, op_sltiu },
-            { cpu_opcode_t::COP, execute_cop0 },
+            { cpu_opcode_t::LHU, op_lhu },
+            { cpu_opcode_t::LWR, op_lwr },
+            { cpu_opcode_t::SB, op_sb },
+            { cpu_opcode_t::SH, op_sh },
+            { cpu_opcode_t::SWL, op_swl },
+            { cpu_opcode_t::SW, op_sw },
+            { cpu_opcode_t::SWR, op_swr },
+            { cpu_opcode_t::LWC0, op_lswc_absent },
+            { cpu_opcode_t::LWC1, op_lswc_absent },
+            { cpu_opcode_t::LWC2, op_lwc2 },
+            { cpu_opcode_t::LWC3, op_lswc_absent },
+            { cpu_opcode_t::SWC0, op_lswc_absent },
+            { cpu_opcode_t::SWC1, op_lswc_absent },
+            { cpu_opcode_t::SWC2, op_swc2 },
+            { cpu_opcode_t::SWC3, op_lswc_absent },
         };
 
         auto opcode = static_cast <cpu_opcode_t> (instr.a.opcode);
