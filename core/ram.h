@@ -15,10 +15,10 @@ namespace ps1 {
     void ram_load_state(ram_t*);
 
     FETCH_FN(ram_t) fetch(void* ram, mem_addr_t offset) {
-        return *(type*)(((device*)ram)->data + offset);
+        return *(type_t*)(((device_t*)ram)->data + offset);
     }
 
-    STORE_FN(ram_t) store(void* ram, mem_addr_t offset, type value) {
-        *(type*)(((device*)ram)->data + offset) = value;
+    STORE_FN(ram_t) store(void* ram, mem_addr_t offset, type_t value) {
+        *(type_t*)(((device_t*)ram)->data + offset) = value;
     }
 }

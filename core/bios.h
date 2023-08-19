@@ -12,6 +12,6 @@ namespace ps1 {
     void bios_exit(bios_t*);
 
     FETCH_FN(bios_t) fetch(void* bios, mem_addr_t offset) {
-        return *(type*)(((device*)bios)->data + offset);
+        return *(type_t*)(((device_t*)bios)->data + offset);
     }
 }

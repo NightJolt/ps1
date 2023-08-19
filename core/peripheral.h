@@ -3,12 +3,12 @@
 #include "defs.h"
 
 #define FETCH_FN(type_name)\
-    template <class device, class type, class true_device = std::remove_cv_t<device>>\
-    std::enable_if_t<std::is_same_v<true_device, type_name> && std::is_integral_v<type>, type>
+    template <class device_t, class type_t, class true_device_t = std::remove_cv_t<device_t>>\
+    std::enable_if_t<std::is_same_v<true_device_t, type_name> && std::is_integral_v<type_t>, type_t>
 
 #define STORE_FN(type_name)\
-    template <class device, class type, class true_device = std::remove_cv_t<device>>\
-    std::enable_if_t<std::is_same_v<true_device, type_name> && std::is_integral_v<type>, void>
+    template <class device_t, class type_t, class true_device_t = std::remove_cv_t<device_t>>\
+    std::enable_if_t<std::is_same_v<true_device_t, type_name> && std::is_integral_v<type_t>, void>
 
 namespace ps1 {
     struct mem_range_t {

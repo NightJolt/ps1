@@ -8,6 +8,7 @@
 #include "hardreg.h"
 #include "expansion.h"
 #include "gpu.h"
+#include "dma.h"
 #include "nodevice.h"
 
 namespace ps1 {
@@ -19,6 +20,7 @@ namespace ps1 {
         hardreg_t hardreg;
         expansion_t expansion;
         gpu_t gpu;
+        dma_t dma;
     };
 
     void ps1_init(ps1_t*, const str_t&);

@@ -394,7 +394,7 @@ namespace ps1 {
     * bitwise or two registers
     */
     void op_or(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, instr.a.rt, get_reg(cpu, instr.a.rs) | get_reg(cpu, instr.a.rt));
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) | get_reg(cpu, instr.a.rt));
     }
 
     /*
@@ -402,7 +402,7 @@ namespace ps1 {
     * bitwise xor two registers
     */
     void op_xor(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, instr.a.rt, get_reg(cpu, instr.a.rs) ^ get_reg(cpu, instr.a.rt));
+        set_reg(cpu, instr.a.rd, get_reg(cpu, instr.a.rs) ^ get_reg(cpu, instr.a.rt));
     }
 
     /*

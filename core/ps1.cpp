@@ -51,6 +51,11 @@ namespace {
         gpu_info.device = &console->gpu;
         SETUP_STORE_FETCH(ps1::gpu_t, gpu_info);
 
+        // * dma
+        ps1::device_info_t dma_info;
+        dma_info.device = &console->dma;
+        SETUP_STORE_FETCH(ps1::dma_t, dma_info);
+
         // * important to map nodevices first to override subregions
         {
             // * Cache control registers
@@ -72,15 +77,15 @@ namespace {
             // * Timer
             nodevice_info.mem_range = { 0x1F801100, 0x1F80112F - 0x1F801100 };
             ps1::bus_connect(&console->bus, nodevice_info);
-
-            // * DMA (Direct Memory Access)
-            nodevice_info.mem_range = { 0x1F801080, 0x1F801100 - 0x1F801080 };
-            ps1::bus_connect(&console->bus, nodevice_info);
         }
 
         {
             gpu_info.mem_range = { 0x1F801810, 8 };
             ps1::bus_connect(&console->bus, gpu_info);
+
+            // * DMA (Direct Memory Access)
+            dma_info.mem_range = { 0x1F801080, 0x1F801100 - 0x1F801080 };
+            ps1::bus_connect(&console->bus, dma_info);
         }
 
         bios_info.mem_range = { ps1::BIOS_ADDR, ps1::BIOS_SIZE };
@@ -106,15 +111,19 @@ void ps1::ps1_init(ps1_t* console, const str_t& bios_path) {
 void ps1::ps1_exit(ps1_t* console) {
     cpu_exit(&console->cpu);
     bus_exit(&console->bus);
+    ram_exit(&console->ram);
+    dma_exit(&console->dma);
     bios_exit(&console->bios);
 }
 
 void ps1::ps1_soft_reset(ps1_t* console) {
+    dma_exit(&console->dma);
     ram_exit(&console->ram);
     cpu_exit(&console->cpu);
 
     cpu_init(&console->cpu, &console->bus);
     ram_init(&console->ram);
+    dma_init(&console->dma);
 }
 
 void ps1::ps1_save_state(ps1_t* console, const str_t& path) {
