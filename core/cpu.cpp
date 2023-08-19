@@ -74,6 +74,7 @@ namespace ps1 {
         store = 0x5,
         syscall = 0x8,
         brk = 0x9,
+        illegal_instr = 0xA,
         cop_absent = 0xB,
         overflow = 0xC,
     };
@@ -762,11 +763,12 @@ namespace ps1 {
                 (uint32_t)(bool)instr.a.opcode , instr.a.opcode ? instr.a.opcode : instr.a.subfunc
             )
         );
-        // ASSERT(false, err_msg_buffer);
 
         DEBUG_CODE(logger::push(err_msg_buffer, logger::type_t::error, "cpu"));
 
-        cpu_set_state(cpu, cpu_state_t::halted);
+        // cpu_set_state(cpu, cpu_state_t::halted);
+
+        throw_exception(cpu, exception_t::illegal_instr);
     }
 
     typedef void(*cpu_instr_handler_func)(cpu_t*, cpu_instr_t);
@@ -789,7 +791,7 @@ namespace ps1 {
         throw_exception(cpu, exception_t::cop_absent);
     }
 
-    // * cop2 not implemented on ps1
+    // * cop2
     void execute_cop2(cpu_t* cpu, cpu_instr_t instr) {
         DEBUG_CODE(execute_err(cpu, instr));
     }
