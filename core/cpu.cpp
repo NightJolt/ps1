@@ -35,7 +35,7 @@ namespace ps1 {
     }
 
     mem_addr_t get_exception_handler_addr(cpu_t* cpu) {
-        return cpu->c0regs[12] & SR_BOOT_EXCEPTION_VECTORS_BIT ? 0xBFC00180 : 0x80000080;
+        return (cpu->c0regs[12] & SR_BOOT_EXCEPTION_VECTORS_BIT) ? 0xBFC00180 : 0x80000080;
     }
 }
 
@@ -668,7 +668,7 @@ namespace ps1 {
     */
     void op_lwl(cpu_t* cpu, cpu_instr_t instr) {
         mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
-        mem_addr_t aligned_addr = addr & ~0x3;
+        mem_addr_t aligned_addr = addr & (~0x3);
 
         uint32_t aligned_val = bus_fetch32(cpu->bus, aligned_addr);
         uint32_t old_val = get_reg(cpu, instr.b.rt);
@@ -686,13 +686,13 @@ namespace ps1 {
     */
     void op_lwr(cpu_t* cpu, cpu_instr_t instr) {
         mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
-        mem_addr_t aligned_addr = addr & ~0x3;
+        mem_addr_t aligned_addr = addr & (~0x3);
 
         uint32_t aligned_val = bus_fetch32(cpu->bus, aligned_addr);
         uint32_t old_val = get_reg(cpu, instr.b.rt);
 
         uint32_t mod4 = addr & 0x3;
-        uint32_t new_val = (old_val & ~(~0u >> (mod4 << 3))) | (aligned_val >> (mod4 << 3));
+        uint32_t new_val = (old_val & (~(~0u >> (mod4 << 3)))) | (aligned_val >> (mod4 << 3));
 
         set_reg(cpu, instr.b.rt, new_val); // ! ignoring load delay
     }
@@ -703,13 +703,13 @@ namespace ps1 {
     */
     void op_swl(cpu_t* cpu, cpu_instr_t instr) {
         mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
-        mem_addr_t aligned_addr = addr & ~0x3;
+        mem_addr_t aligned_addr = addr & (~0x3);
 
         uint32_t aligned_val = bus_fetch32(cpu->bus, aligned_addr);
         uint32_t old_val = get_reg(cpu, instr.b.rt);
 
         uint32_t mod4 = addr & 0x3;
-        uint32_t new_val = (old_val & (~0u & ~(~0u >> ((3 - mod4) << 3)))) | (aligned_val >> ((3 - mod4) << 3));
+        uint32_t new_val = (old_val & (~0u & (~(~0u >> ((3 - mod4) << 3))))) | (aligned_val >> ((3 - mod4) << 3));
 
         bus_store32(cpu->bus, aligned_addr, new_val); // ! probably need to check for exception
     }
@@ -720,7 +720,7 @@ namespace ps1 {
     */
     void op_swr(cpu_t* cpu, cpu_instr_t instr) {
         mem_addr_t addr = get_reg(cpu, instr.b.rs) + sign_extend_16(instr.b.imm16);
-        mem_addr_t aligned_addr = addr & ~0x3;
+        mem_addr_t aligned_addr = addr & (~0x3);
 
         uint32_t aligned_val = bus_fetch32(cpu->bus, aligned_addr);
         uint32_t old_val = get_reg(cpu, instr.b.rt);

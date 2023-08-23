@@ -6,21 +6,39 @@
 
 namespace ps1 {
     struct dma_t {
-        struct channel_t {
-            uint32_t direction : 1; // * 0 = device to ram, 1 = ram to device
-            uint32_t addr_step : 1; // * 0 = increment, 1 = decrement 4 bytes
-            uint32_t _0 : 6;
-            uint32_t chopping_enable : 1;
-            uint32_t sync_mode : 2; // * 0 = manual/immediate, 1 = request, 2 = linked list, 3 = reserved
-            uint32_t _1 : 5;
-            uint32_t chopping_dma_window_size : 3;
-            uint32_t _2 : 1;
-            uint32_t chopping_cpu_window_size : 3;
-            uint32_t _3 : 1;
-            uint32_t start_busy : 1; // * 0 = stopped/completed, 1 = start/enable/busy
-            uint32_t _4 : 3;
-            uint32_t trigger : 1; // * 0 = normal, 1 = trigger
-            uint32_t _5 : 3;
+        struct channel_t { // ! members not to be rearranged
+            uint32_t base; // * only [0:23] bits are used
+
+            /*
+            * sync 0:
+            * [0:15] number of words
+            * 
+            * sync 1:
+            * [0:15] block size
+            * [16:31] block count
+            */
+            uint32_t block;
+
+            union {
+                struct {
+                    uint32_t direction : 1; // * 0 = device to ram, 1 = ram to device
+                    uint32_t addr_step : 1; // * 0 = increment, 1 = decrement 4 bytes
+                    uint32_t _0 : 6;
+                    uint32_t chopping_enable : 1;
+                    uint32_t sync_mode : 2; // * 0 = manual/immediate, 1 = request, 2 = linked list, 3 = reserved
+                    uint32_t _1 : 5;
+                    uint32_t chopping_dma_window_size : 3;
+                    uint32_t _2 : 1;
+                    uint32_t chopping_cpu_window_size : 3;
+                    uint32_t _3 : 1;
+                    uint32_t start_busy : 1; // * 0 = stopped/completed, 1 = start/enable/busy
+                    uint32_t _4 : 3;
+                    uint32_t start_trigger : 1; // * 0 = normal, 1 = manual start; for sync mode 0
+                    uint32_t _5 : 3;
+                };
+
+                uint32_t raw;
+            } control;
         };
 
         union interrupt_t {
@@ -38,6 +56,16 @@ namespace ps1 {
             };
 
             uint32_t raw;
+        };
+
+        enum struct port_t {
+            mdecin = 0,
+            mdecout = 1,
+            gpu = 2,
+            cdrom = 3,
+            spu = 4,
+            pio = 5,
+            otc = 6
         };
         
         channel_t channel[7]; // * +0x00
@@ -65,7 +93,7 @@ namespace ps1 {
     }
 
     inline void set_interrupt(dma_t* dma, dma_t::interrupt_t value) {
-        value.irq_flag = ~value.irq_flag & dma->interrupt.irq_flag;
+        value.irq_flag = (~value.irq_flag) & dma->interrupt.irq_flag;
         dma->interrupt = value;
     }
 
@@ -74,7 +102,26 @@ namespace ps1 {
 
         dma_t* dma = (dma_t*)device;
 
-        return offset == 0x70 ? dma->control : offset == 0x74 ? get_interrupt(dma) : 0;
+        if (offset == 0x70) {
+            return dma->control;
+        } else if (offset == 0x74) {
+            return get_interrupt(dma);
+        } else {
+            auto& channel = dma->channel[offset >> 4];
+            uint32_t field = offset & 0xF;
+
+            if (field == 0) {
+                return channel.base;
+            } else if (field == 4) {
+                return channel.block;
+            } else if (field == 8) {
+                return channel.control.raw;
+            }
+        }
+
+        ASSERT(false, "unhandled dma fetch");
+        
+        return 0;
     }
 
     STORE_FN(dma_t) store(void* device, mem_addr_t offset, type_t value) {
@@ -86,6 +133,19 @@ namespace ps1 {
             dma->control = value;
         } else if (offset == 0x74) {
             set_interrupt(dma, value);
+        } else {
+            auto& channel = dma->channel[offset >> 4];
+            uint32_t field = offset & 0xF;
+
+            if (field == 0) {
+                channel.base = value & 0xFFFFFF;
+            } else if (field == 4) {
+                channel.block = value;
+            } else if (field == 8) {
+                channel.control.raw = value;
+            } else {
+                ASSERT(false, "unaligned dma store");
+            }
         }
     }
 }
