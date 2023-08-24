@@ -120,4 +120,6 @@ namespace ps1 {
     struct bus_t;
     struct cpu_t;
     struct bios_t;
+    struct ram_t;
+    struct dma_t;
 }
