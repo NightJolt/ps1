@@ -123,7 +123,7 @@ void ps1::ps1_soft_reset(ps1_t* console) {
 
     cpu_init(&console->cpu, &console->bus);
     ram_init(&console->ram);
-    dma_init(&console->dma);
+    dma_init(&console->dma, &console->ram);
 }
 
 void ps1::ps1_save_state(ps1_t* console, const str_t& path) {

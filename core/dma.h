@@ -3,29 +3,41 @@
 #include "defs.h"
 #include "peripheral.h"
 #include "logger.h"
+#include "ram.h"
 
 namespace ps1 {
     struct dma_t {
+        ram_t* ram;
+
         struct channel_t { // ! members not to be rearranged
-            uint32_t base; // * only [0:23] bits are used
+            union control_t {
+                bool is_active() {
+                    return start_busy && ((uint32_t)sync_mode != 0 || start_trigger);
+                }
 
-            /*
-            * sync 0:
-            * [0:15] number of words
-            * 
-            * sync 1:
-            * [0:15] block size
-            * [16:31] block count
-            */
-            uint32_t block;
+                // * disable dma channel so it does not recopies data
+                void disable() {
+                    start_busy = false;
+                    start_trigger = false;
+                }
 
-            union {
+                enum struct transfer_dir_t {
+                    device_to_ram = 0,
+                    ram_to_device = 1,
+                };
+
+                enum struct sync_mode_t {
+                    immediate = 0,      // * immediately transfer data
+                    request = 1,        // * transfer after trigger signal
+                    linked_list = 2,    // * transfer from linked list structure
+                };
+
                 struct {
-                    uint32_t direction : 1; // * 0 = device to ram, 1 = ram to device
-                    uint32_t addr_step : 1; // * 0 = increment, 1 = decrement 4 bytes
+                    transfer_dir_t direction : 1; // * 0 = device to ram, 1 = ram to device
+                    uint32_t addr_step : 1; // * 0 = +4bytes, 1 = -4bytes
                     uint32_t _0 : 6;
                     uint32_t chopping_enable : 1;
-                    uint32_t sync_mode : 2; // * 0 = manual/immediate, 1 = request, 2 = linked list, 3 = reserved
+                    sync_mode_t sync_mode : 2; // * 0 = manual/immediate, 1 = request, 2 = linked list, 3 = reserved
                     uint32_t _1 : 5;
                     uint32_t chopping_dma_window_size : 3;
                     uint32_t _2 : 1;
@@ -38,14 +50,48 @@ namespace ps1 {
                 };
 
                 uint32_t raw;
-            } control;
+            };
+
+            // * onlu for immediate and request sync modes
+            uint32_t get_transfer_size() {
+                return base * (control.sync_mode == control_t::sync_mode_t::immediate) ? block : 1;
+            }
+            
+            uint32_t base; // * only [0:23] bits are used
+
+            /*
+            * sync 0:
+            * [0:15] number of words
+            * 
+            * sync 1:
+            * [0:15] block size in words
+            * [16:31] block count
+            */
+            uint32_t block;
+            control_t control;
         };
 
         union interrupt_t {
-            interrupt_t() {}
-            interrupt_t(uint32_t value) : raw(value) {}
+            void set(uint32_t v) {
+                auto* value = (interrupt_t*)&v;
 
-            struct {
+                value->irq_flag = (~value->irq_flag) & irq_flag;
+                raw = *(uint32_t*)value;
+            }
+            
+            // * IF b15=1 OR (b23=1 AND (b16-22 AND b24-30)>0) THEN b31=1 ELSE b31=0
+            // ! needs testing (its either == 0x7f or > 0)
+            uint32_t get() {
+                irq_flag_master = irq_force || (irq_master_enable && irq_enable == 0x7F && irq_flag == 0x7F);
+
+                return raw;
+            }
+
+            void clear() {
+                raw = 0;
+            }
+
+            private: struct {
                 uint32_t _0 : 6;
                 uint32_t _1 : 9;
                 uint32_t irq_force : 1;
@@ -55,7 +101,7 @@ namespace ps1 {
                 uint32_t irq_flag_master : 1; // ! not to be directly accessed
             };
 
-            uint32_t raw;
+            private: uint32_t raw;
         };
 
         enum struct port_t {
@@ -68,34 +114,16 @@ namespace ps1 {
             otc = 6
         };
         
-        channel_t channel[7]; // * +0x00
+        channel_t channels[7]; // * +0x00
         uint32_t control; // * +0x70
         interrupt_t interrupt; // * +0x74
     };
 
-    void dma_init(dma_t*);
+    void dma_init(dma_t*, ram_t*);
     void dma_exit(dma_t*);
     
     // void dma_save_state(dma_t*);
     // void dma_load_state(dma_t*);
-
-    // * IF b15=1 OR (b23=1 AND (b16-22 AND b24-30)>0) THEN b31=1 ELSE b31=0
-    // ! needs testing (its either == 0x7f or > 0)
-    inline bool get_irq_flag_master(dma_t* dma) {
-        return dma->interrupt.irq_force || (dma->interrupt.irq_master_enable && dma->interrupt.irq_enable == 0x7F && dma->interrupt.irq_flag == 0x7F);
-    }
-
-    inline uint32_t get_interrupt(dma_t* dma) {
-        auto interrupt = dma->interrupt;
-        interrupt.irq_flag_master = get_irq_flag_master(dma);
-
-        return interrupt.raw;
-    }
-
-    inline void set_interrupt(dma_t* dma, dma_t::interrupt_t value) {
-        value.irq_flag = (~value.irq_flag) & dma->interrupt.irq_flag;
-        dma->interrupt = value;
-    }
 
     FETCH_FN(dma_t) fetch(void* device, mem_addr_t offset) {
         DEBUG_CODE(logger::push("fetching", logger::type_t::warning, "dma"));
@@ -105,9 +133,9 @@ namespace ps1 {
         if (offset == 0x70) {
             return dma->control;
         } else if (offset == 0x74) {
-            return get_interrupt(dma);
+            return dma->interrupt.get();
         } else {
-            auto& channel = dma->channel[offset >> 4];
+            auto& channel = dma->channels[offset >> 4];
             uint32_t field = offset & 0xF;
 
             if (field == 0) {
@@ -124,6 +152,55 @@ namespace ps1 {
         return 0;
     }
 
+    /*
+    * we copy all data in one go without chopping
+    * its not accurate but should not cause any issues either excluding some games
+    */
+    inline void dma_process_block_copy(dma_t* dma, uint32_t port) {
+        dma_t::channel_t& channel = dma->channels[port];
+        int32_t step = channel.control.addr_step ? -4 : 4;
+        int32_t size = channel.get_transfer_size();
+
+        /*
+        * two LSB is ignored. not documented on psx-spx
+        * ref: https://github.com/libretro-mirrors/mednafen-git/blob/master/src/psx/dma.cpp
+        */
+        mem_addr_t addr = channel.base & 0x1ffffc;
+
+        while (size > 0) {
+            if (channel.control.direction == dma_t::channel_t::control_t::transfer_dir_t::device_to_ram) {
+                switch(port) {
+                    case (uint32_t)dma_t::port_t::otc: {
+                        uint32_t val = size == 1 ? 0xffffff : ((addr - 4) & 0x1fffff);
+
+                        store<ram_t, uint32_t>((void*)dma->ram, addr, val);
+
+                        break;
+                    }
+
+                    default: {
+                        ASSERT(false, "unimplemented port");
+                    }
+                }
+            } else {
+                ASSERT(false, "ram to device not implemented");
+            }
+
+            addr += step;
+            size--;
+        }
+
+        channel.control.disable();
+    }
+
+    inline void dma_process(dma_t* dma, uint32_t port) {
+        if (dma->channels[port].control.sync_mode == dma_t::channel_t::control_t::sync_mode_t::linked_list) {
+                ASSERT(false, "linked link dma not implemented");
+        }
+
+        dma_process_block_copy(dma, port);
+    }
+
     STORE_FN(dma_t) store(void* device, mem_addr_t offset, type_t value) {
         DEBUG_CODE(logger::push("storing", logger::type_t::warning, "dma"));
 
@@ -132,9 +209,10 @@ namespace ps1 {
         if (offset == 0x70) {
             dma->control = value;
         } else if (offset == 0x74) {
-            set_interrupt(dma, value);
+            dma->interrupt.set(value);
         } else {
-            auto& channel = dma->channel[offset >> 4];
+            uint32_t port = offset >> 4;
+            auto& channel = dma->channels[port];
             uint32_t field = offset & 0xF;
 
             if (field == 0) {
@@ -143,6 +221,10 @@ namespace ps1 {
                 channel.block = value;
             } else if (field == 8) {
                 channel.control.raw = value;
+
+                if (channel.control.is_active()) {
+                    dma_process(dma, port);
+                }
             } else {
                 ASSERT(false, "unaligned dma store");
             }
