@@ -146,38 +146,38 @@ namespace ps1 {
     }
     
     str_t describe_reg(uint32_t i) {
-        if (i == 0) return "($zero)";
-        if (i == 1) return "($at)";
-        if (i == 2) return "($v0)";
-        if (i == 3) return "($v1)";
-        if (i == 4) return "($a0)";
-        if (i == 5) return "($a1)";
-        if (i == 6) return "($a2)";
-        if (i == 7) return "($a3)";
-        if (i == 8) return "($t0)";
-        if (i == 9) return "($t1)";
-        if (i == 10) return "($t2)";
-        if (i == 11) return "($t3)";
-        if (i == 12) return "($t4)";
-        if (i == 13) return "($t5)";
-        if (i == 14) return "($t6)";
-        if (i == 15) return "($t7)";
-        if (i == 16) return "($s0)";
-        if (i == 17) return "($s1)";
-        if (i == 18) return "($s2)";
-        if (i == 19) return "($s3)";
-        if (i == 20) return "($s4)";
-        if (i == 21) return "($s5)";
-        if (i == 22) return "($s6)";
-        if (i == 23) return "($s7)";
-        if (i == 24) return "($t8)";
-        if (i == 25) return "($t9)";
-        if (i == 26) return "($k0)";
-        if (i == 27) return "($k1)";
-        if (i == 28) return "($gp)";
-        if (i == 29) return "($sp)";
-        if (i == 30) return "($fp)";
-        if (i == 31) return "($ra)";
+        if (i == 0) return "($zero)";   // * always 0
+        if (i == 1) return "($at)";     // * reserved for assembler
+        if (i == 2) return "($v0)";     // * stores results
+        if (i == 3) return "($v1)";     // * stores results
+        if (i == 4) return "($a0)";     // * stores arguments
+        if (i == 5) return "($a1)";     // * stores arguments
+        if (i == 6) return "($a2)";     // * stores arguments
+        if (i == 7) return "($a3)";     // * stores arguments
+        if (i == 8) return "($t0)";     // * unsaved temporary
+        if (i == 9) return "($t1)";     // * unsaved temporary
+        if (i == 10) return "($t2)";    // * unsaved temporary
+        if (i == 11) return "($t3)";    // * unsaved temporary
+        if (i == 12) return "($t4)";    // * unsaved temporary
+        if (i == 13) return "($t5)";    // * unsaved temporary
+        if (i == 14) return "($t6)";    // * unsaved temporary
+        if (i == 15) return "($t7)";    // * unsaved temporary
+        if (i == 16) return "($s0)";    // * callee saved
+        if (i == 17) return "($s1)";    // * callee saved
+        if (i == 18) return "($s2)";    // * callee saved
+        if (i == 19) return "($s3)";    // * callee saved
+        if (i == 20) return "($s4)";    // * callee saved
+        if (i == 21) return "($s5)";    // * callee saved
+        if (i == 22) return "($s6)";    // * callee saved
+        if (i == 23) return "($s7)";    // * callee saved
+        if (i == 24) return "($t8)";    // * unsaved temporary
+        if (i == 25) return "($t9)";    // * unsaved temporary
+        if (i == 26) return "($k0)";    // * reserved for kernel
+        if (i == 27) return "($k1)";    // * reserved for kernel
+        if (i == 28) return "($gp)";    // * global pointer
+        if (i == 29) return "($sp)";    // * stack pointer
+        if (i == 30) return "($fp)";    // * frame pointer
+        if (i == 31) return "($ra)";    // * return address
 
         return "";
     }
