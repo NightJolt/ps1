@@ -21,12 +21,12 @@ namespace ps1 {
                     start_trigger = false;
                 }
 
-                enum struct transfer_dir_t {
+                enum struct transfer_dir_t : uint32_t {
                     device_to_ram = 0,
                     ram_to_device = 1,
                 };
 
-                enum struct sync_mode_t {
+                enum struct sync_mode_t : uint32_t {
                     immediate = 0,      // * immediately transfer data
                     request = 1,        // * transfer after trigger signal
                     linked_list = 2,    // * transfer from linked list structure
@@ -104,7 +104,7 @@ namespace ps1 {
             private: uint32_t raw;
         };
 
-        enum struct port_t {
+        enum struct port_t : uint32_t {
             mdecin = 0,
             mdecout = 1,
             gpu = 2,
@@ -124,6 +124,14 @@ namespace ps1 {
     
     // void dma_save_state(dma_t*);
     // void dma_load_state(dma_t*);
+
+    /*
+    * we copy all data in one go without chopping
+    * its not accurate but should not cause any issues either excluding some games
+    */
+    void dma_process_block_copy(dma_t*, uint32_t);
+    void dma_process_linked_list(dma_t*, uint32_t);
+    void dma_process(dma_t*, uint32_t);
 
     FETCH_FN(dma_t) fetch(void* device, mem_addr_t offset) {
         DEBUG_CODE(logger::push("fetching", logger::type_t::warning, "dma"));
@@ -150,55 +158,6 @@ namespace ps1 {
         ASSERT(false, "unhandled dma fetch");
         
         return 0;
-    }
-
-    /*
-    * we copy all data in one go without chopping
-    * its not accurate but should not cause any issues either excluding some games
-    */
-    inline void dma_process_block_copy(dma_t* dma, uint32_t port) {
-        dma_t::channel_t& channel = dma->channels[port];
-        int32_t step = channel.control.addr_step ? -4 : 4;
-        int32_t size = channel.get_transfer_size();
-
-        /*
-        * two LSB is ignored. not documented on psx-spx
-        * ref: https://github.com/libretro-mirrors/mednafen-git/blob/master/src/psx/dma.cpp
-        */
-        mem_addr_t addr = channel.base & 0x1ffffc;
-
-        while (size > 0) {
-            if (channel.control.direction == dma_t::channel_t::control_t::transfer_dir_t::device_to_ram) {
-                switch(port) {
-                    case (uint32_t)dma_t::port_t::otc: {
-                        uint32_t val = size == 1 ? 0xffffff : ((addr - 4) & 0x1fffff);
-
-                        store<ram_t, uint32_t>((void*)dma->ram, addr, val);
-
-                        break;
-                    }
-
-                    default: {
-                        ASSERT(false, "unimplemented port");
-                    }
-                }
-            } else {
-                ASSERT(false, "ram to device not implemented");
-            }
-
-            addr += step;
-            size--;
-        }
-
-        channel.control.disable();
-    }
-
-    inline void dma_process(dma_t* dma, uint32_t port) {
-        if (dma->channels[port].control.sync_mode == dma_t::channel_t::control_t::sync_mode_t::linked_list) {
-                ASSERT(false, "linked link dma not implemented");
-        }
-
-        dma_process_block_copy(dma, port);
     }
 
     STORE_FN(dma_t) store(void* device, mem_addr_t offset, type_t value) {
