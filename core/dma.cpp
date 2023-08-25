@@ -52,7 +52,22 @@ void ps1::dma_process_block_copy(dma_t* dma, uint32_t port) {
             size--;
         }
     } else {
-        ASSERT(false, "ram to device not implemented");
+        while (size > 0) {
+            switch(port) {
+                case (uint32_t)dma_t::port_t::gpu: {
+                    uint32_t val = fetch<ram_t, uint32_t>((void*)dma->ram, addr);
+
+                    break;
+                }
+
+                default: {
+                    ASSERT(false, "unimplemented port. should not happen");
+                }
+            }
+
+            addr += step;
+            size--;
+        }
     }
 
     channel.control.disable();

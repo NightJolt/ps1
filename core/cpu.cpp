@@ -769,6 +769,8 @@ namespace ps1 {
         // cpu_set_state(cpu, cpu_state_t::halted);
 
         throw_exception(cpu, exception_t::illegal_instr);
+
+        logger::spam("illegal instruction detected");
     }
 
     typedef void(*cpu_instr_handler_func)(cpu_t*, cpu_instr_t);
@@ -871,16 +873,16 @@ namespace ps1 {
             { cpu_opcode_t::COP3, execute_cop3 },
             { cpu_opcode_t::LB, op_lb },
             { cpu_opcode_t::LH, op_lh },
-            { cpu_opcode_t::LWL, op_lwl },
+            { cpu_opcode_t::LWL, op_lwl }, // ?
             { cpu_opcode_t::LW, op_lw },
             { cpu_opcode_t::LBU, op_lbu },
             { cpu_opcode_t::LHU, op_lhu },
-            { cpu_opcode_t::LWR, op_lwr },
+            { cpu_opcode_t::LWR, op_lwr }, // ?
             { cpu_opcode_t::SB, op_sb },
             { cpu_opcode_t::SH, op_sh },
-            { cpu_opcode_t::SWL, op_swl },
+            { cpu_opcode_t::SWL, op_swl }, // ?
             { cpu_opcode_t::SW, op_sw },
-            { cpu_opcode_t::SWR, op_swr },
+            { cpu_opcode_t::SWR, op_swr }, // ?
             { cpu_opcode_t::LWC0, op_lswc_absent },
             { cpu_opcode_t::LWC1, op_lswc_absent },
             { cpu_opcode_t::LWC2, op_lwc2 },
