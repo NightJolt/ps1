@@ -28,6 +28,12 @@ namespace ps1 {
 
     void ps1_soft_reset(ps1_t*);
 
+    /*
+    * cpu
+    * ram
+    ! gpu
+    ! dma
+    */
     void ps1_save_state(ps1_t*, const str_t&);
     void ps1_load_state(ps1_t*, const str_t&);
 }
