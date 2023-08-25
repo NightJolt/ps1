@@ -469,7 +469,7 @@ namespace ps1 {
     * branch if greater than zero
     */
     void op_bgtz(cpu_t* cpu, cpu_instr_t instr) {
-        if (get_reg(cpu, instr.b.rs) > 0) {
+        if ((int32_t)get_reg(cpu, instr.b.rs) > 0) {
             cpu_branch(cpu, sign_extend_16(instr.b.imm16));
         }
     }
@@ -478,7 +478,7 @@ namespace ps1 {
     * branch if less or equal to zero
     */
     void op_blez(cpu_t* cpu, cpu_instr_t instr) {
-        if (get_reg(cpu, instr.b.rs) <= 0) {
+        if ((int32_t)get_reg(cpu, instr.b.rs) <= 0) {
             cpu_branch(cpu, sign_extend_16(instr.b.imm16));
         }
     }
@@ -487,8 +487,8 @@ namespace ps1 {
     * bltz, bgez, bltzal, bgezal
     */
     void op_bbbb(cpu_t* cpu, cpu_instr_t instr) {
-        if (((instr.b.rt >> 4) & 0x1) ^ (get_reg(cpu, instr.b.rs) < 0)) {
-            if (instr.b.rt & 0x1) {
+        if ((instr.b.rt & 0x1) ^ ((int32_t)get_reg(cpu, instr.b.rs) < 0)) {
+            if (instr.b.rt & 0x10) {
                 set_reg(cpu, 31, cpu->npc);
             }
 
@@ -509,7 +509,7 @@ namespace ps1 {
     * if left operand register is less then immediate value sets value to 1, otherwise 0
     */
     void op_slti(cpu_t* cpu, cpu_instr_t instr) {
-        set_reg(cpu, instr.b.rt, ((int32_t)get_reg(cpu, instr.b.rs)) < sign_extend_16(instr.b.imm16));
+        set_reg(cpu, instr.b.rt, (int32_t)get_reg(cpu, instr.b.rs) < (int32_t)sign_extend_16(instr.b.imm16));
     }
 
     /*
