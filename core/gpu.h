@@ -122,8 +122,6 @@ namespace ps1 {
     void gp1(gpu_t*, uint32_t);
 
     FETCH_FN(gpu_t) fetch(void* device, mem_addr_t offset) {
-        DEBUG_CODE(logger::push("fetching", logger::type_t::warning, "gpu"));
-
         gpu_t* gpu = (gpu_t*)device;
 
         if (offset == 0) {
@@ -138,8 +136,6 @@ namespace ps1 {
     }
 
     STORE_FN(gpu_t) store(void* device, mem_addr_t offset, type_t value) {
-        DEBUG_CODE(logger::push("storing", logger::type_t::warning, "gpu"));
-
         gpu_t* gpu = (gpu_t*)device;
 
         if (offset == 0) {

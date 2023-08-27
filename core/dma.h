@@ -142,8 +142,6 @@ namespace ps1 {
     void dma_process(dma_t*, uint32_t);
 
     FETCH_FN(dma_t) fetch(void* device, mem_addr_t offset) {
-        DEBUG_CODE(logger::push("fetching", logger::type_t::warning, "dma"));
-
         dma_t* dma = (dma_t*)device;
 
         if (offset == 0x70) {
@@ -169,8 +167,6 @@ namespace ps1 {
     }
 
     STORE_FN(dma_t) store(void* device, mem_addr_t offset, type_t value) {
-        DEBUG_CODE(logger::push("storing", logger::type_t::warning, "dma"));
-
         dma_t* dma = (dma_t*)device;
 
         if (offset == 0x70) {
