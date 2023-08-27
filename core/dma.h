@@ -3,11 +3,11 @@
 #include "defs.h"
 #include "peripheral.h"
 #include "logger.h"
-#include "ram.h"
 
 namespace ps1 {
     struct dma_t {
         ram_t* ram;
+        gpu_t* gpu;
 
         struct channel_t { // ! members not to be rearranged
             union control_t {
@@ -87,6 +87,14 @@ namespace ps1 {
                 return raw;
             }
 
+            void set_raw(uint32_t v) {
+                raw = v;
+            }
+
+            uint32_t get_raw() {
+                return raw;
+            }
+
             void clear() {
                 raw = 0;
             }
@@ -119,11 +127,11 @@ namespace ps1 {
         interrupt_t interrupt; // * +0x74
     };
 
-    void dma_init(dma_t*, ram_t*);
+    void dma_init(dma_t*, ram_t*, gpu_t*);
     void dma_exit(dma_t*);
     
-    // void dma_save_state(dma_t*);
-    // void dma_load_state(dma_t*);
+    void dma_save_state(dma_t*);
+    void dma_load_state(dma_t*);
 
     /*
     * we copy all data in one go without chopping

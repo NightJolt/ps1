@@ -118,18 +118,22 @@ void ps1::ps1_exit(ps1_t* console) {
 
 void ps1::ps1_soft_reset(ps1_t* console) {
     dma_exit(&console->dma);
+    gpu_exit(&console->gpu);
     ram_exit(&console->ram);
     cpu_exit(&console->cpu);
 
     cpu_init(&console->cpu, &console->bus);
     ram_init(&console->ram);
-    dma_init(&console->dma, &console->ram);
+    gpu_init(&console->gpu);
+    dma_init(&console->dma, &console->ram, &console->gpu);
 }
 
 void ps1::ps1_save_state(ps1_t* console, const str_t& path) {
     file::open_writable(path);
     cpu_save_state(&console->cpu);
     ram_save_state(&console->ram);
+    gpu_save_state(&console->gpu);
+    dma_save_state(&console->dma);
     file::close_writable();
 }
 
@@ -137,5 +141,7 @@ void ps1::ps1_load_state(ps1_t* console, const str_t& path) {
     file::open_readable(path);
     cpu_load_state(&console->cpu);
     ram_load_state(&console->ram);
+    gpu_load_state(&console->gpu);
+    dma_load_state(&console->dma);
     file::close_readable();
 }

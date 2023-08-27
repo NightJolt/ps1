@@ -1,7 +1,11 @@
 #include "dma.h"
+#include "ram.h"
+#include "gpu.h"
+#include "file.h"
 
-void ps1::dma_init(dma_t* dma, ram_t* ram) {
+void ps1::dma_init(dma_t* dma, ram_t* ram, gpu_t* gpu) {
     dma->ram = ram;
+    dma->gpu = gpu;
 
     for (auto& channel : dma->channels) {
         channel.base = 0;
@@ -14,6 +18,28 @@ void ps1::dma_init(dma_t* dma, ram_t* ram) {
 }
 
 void ps1::dma_exit(dma_t* dma) {}
+
+void ps1::dma_save_state(dma_t* dma) {
+    for (auto& channel : dma->channels) {
+        file::write32(channel.base);
+        file::write32(channel.block);
+        file::write32(channel.control.raw);
+    }
+
+    file::write32(dma->control);
+    file::write32(dma->interrupt.get_raw());
+}
+
+void ps1::dma_load_state(dma_t* dma) {
+    for (auto& channel : dma->channels) {
+        channel.base = file::read32();
+        channel.block = file::read32();
+        channel.control.raw = file::read32();
+    }
+
+    dma->control = file::read32();
+    dma->interrupt.set_raw(file::read32());
+}
 
 namespace {
     constexpr uint32_t ignore_2_lsb_mask = 0x1ffffc;
@@ -87,10 +113,10 @@ void ps1::dma_process_linked_list(dma_t* dma, uint32_t port) {
             uint32_t data_size = header >> 24; // * size in words
 
             while (data_size > 0) {
-                mem_addr_t command_addr = (addr + 4) & ignore_2_lsb_mask;
-                uint32_t command = fetch<ram_t, uint32_t>(dma->ram, command_addr);
+                addr = (addr + 4) & ignore_2_lsb_mask;
+                uint32_t command = fetch<ram_t, uint32_t>(dma->ram, addr);
 
-                // ! process command here
+                gp0(dma->gpu, command);
 
                 data_size--;
             }
