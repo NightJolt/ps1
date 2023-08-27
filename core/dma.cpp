@@ -81,7 +81,7 @@ void ps1::dma_process_block_copy(dma_t* dma, uint32_t port) {
         while (size > 0) {
             switch(port) {
                 case (uint32_t)dma_t::port_t::gpu: {
-                    uint32_t val = fetch<ram_t, uint32_t>((void*)dma->ram, addr);
+                    gp0(dma->gpu, fetch<ram_t, uint32_t>((void*)dma->ram, addr));
 
                     break;
                 }
@@ -114,9 +114,8 @@ void ps1::dma_process_linked_list(dma_t* dma, uint32_t port) {
 
             while (data_size > 0) {
                 addr = (addr + 4) & ignore_2_lsb_mask;
-                uint32_t command = fetch<ram_t, uint32_t>(dma->ram, addr);
 
-                gp0(dma->gpu, command);
+                gp0(dma->gpu, fetch<ram_t, uint32_t>(dma->ram, addr));
 
                 data_size--;
             }

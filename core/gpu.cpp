@@ -9,55 +9,13 @@ void ps1::gpu_init(gpu_t* gpu) {
     gpu->stat.ready_to_receive_cmd = 1;
     gpu->stat.ready_to_send_vram_to_cpu = 1;
     gpu->stat.ready_to_recieve_dma_block = 1;
+
+    gpu->gp0_fn_info.args_left = 0;
+    gpu->gp0_cmd_buffer.size = 0;
+    gpu->gp0_data_mode = gp0_data_mode_t::command;
 }
 
 void ps1::gpu_exit(gpu_t* gpu) {}
-    
-void ps1::gpu_save_state(gpu_t* gpu) {
-    file::write32(gpu->stat.raw);
-
-    file::write32(gpu->rect_texture_x_flip);
-    file::write32(gpu->rect_texture_y_flip);
-    file::write32(gpu->texture_window_x_mask);
-    file::write32(gpu->texture_window_y_mask);
-    file::write32(gpu->texture_window_x_offset);
-    file::write32(gpu->texture_window_y_offset);
-    file::write32(gpu->drawing_area_left);
-    file::write32(gpu->drawing_area_top);
-    file::write32(gpu->drawing_area_right);
-    file::write32(gpu->drawing_area_bottom);
-    file::write32(gpu->drawing_offset_x);
-    file::write32(gpu->drawing_offset_y);
-    file::write32(gpu->display_vram_x_start);
-    file::write32(gpu->display_vram_y_start);
-    file::write32(gpu->display_horiz_start);
-    file::write32(gpu->display_horiz_end);
-    file::write32(gpu->display_line_start);
-    file::write32(gpu->display_line_end);
-}
-
-void ps1::gpu_load_state(gpu_t* gpu) {
-    gpu->stat.raw = file::read32();
-    
-    gpu->rect_texture_x_flip = file::read32();
-    gpu->rect_texture_y_flip = file::read32();
-    gpu->texture_window_x_mask = file::read32();
-    gpu->texture_window_y_mask = file::read32();
-    gpu->texture_window_x_offset = file::read32();
-    gpu->texture_window_y_offset = file::read32();
-    gpu->drawing_area_left = file::read32();
-    gpu->drawing_area_top = file::read32();
-    gpu->drawing_area_right = file::read32();
-    gpu->drawing_area_bottom = file::read32();
-    gpu->drawing_offset_x = file::read32();
-    gpu->drawing_offset_y = file::read32();
-    gpu->display_vram_x_start = file::read32();
-    gpu->display_vram_y_start = file::read32();
-    gpu->display_horiz_start = file::read32();
-    gpu->display_horiz_end = file::read32();
-    gpu->display_line_start = file::read32();
-    gpu->display_line_end = file::read32();
-}
 
 namespace {
     uint32_t sign_extend_11(uint32_t value) {
@@ -66,7 +24,31 @@ namespace {
 }
 
 namespace ps1 {
-    void gp0_set_draw_mode(gpu_t* gpu, uint32_t value) {
+    void gp0_nop(gpu_t* gpu) {}
+
+    void gp0_clear_cache(gpu_t* gpu) {
+        logger::push("GP0: clearing cache", logger::type_t::message, "gpu");
+    }
+
+    void gp0_quad_mono_opaque(gpu_t* gpu) {
+        logger::push("GP0: drawing quad", logger::type_t::message, "gpu");
+    }
+
+    void gp0_load_texture(gpu_t* gpu) {
+        uint32_t resolution = gpu->gp0_cmd_buffer.buffer[2];
+        uint32_t width = resolution & 0xffff;
+        uint32_t height = resolution >> 16;
+        uint32_t texture_size = width * height;
+
+        texture_size += texture_size & 0x1; // * round up to be even
+        
+        gpu->gp0_fn_info.args_left = texture_size >> 1;
+        gpu->gp0_data_mode = gp0_data_mode_t::texture;
+    }
+
+    void gp0_set_draw_mode(gpu_t* gpu) {
+        uint32_t value = gpu->gp0_cmd_buffer.buffer[0];
+
         gpu->stat.texture_page_x_base = value & 0xf;
         gpu->stat.texture_page_y_base = (value >> 4) & 0x1;
         gpu->stat.semi_transparency = (value >> 5) & 0x3;
@@ -78,31 +60,97 @@ namespace ps1 {
         gpu->rect_texture_y_flip = (value >> 13) & 0x1;
     }
 
-    void gp0_config_texture_window(gpu_t* gpu, uint32_t value) {
+    void gp0_config_texture_window(gpu_t* gpu) {
+        uint32_t value = gpu->gp0_cmd_buffer.buffer[0];
+
         gpu->texture_window_x_mask = value & 0x1f;
         gpu->texture_window_y_mask = (value >> 5) & 0x1f;
         gpu->texture_window_x_offset = (value >> 10) & 0x1f;
         gpu->texture_window_y_offset = (value >> 15) & 0x1f;
     }
     
-    void gp0_set_draw_area_top_left(gpu_t* gpu, uint32_t value) {
+    void gp0_set_draw_area_top_left(gpu_t* gpu) {
+        uint32_t value = gpu->gp0_cmd_buffer.buffer[0];
+
         gpu->drawing_area_left = value & 0x3ff;
         gpu->drawing_area_top = (value >> 10) & 0x3ff;
     }
     
-    void gp0_set_draw_area_bottom_right(gpu_t* gpu, uint32_t value) {
+    void gp0_set_draw_area_bottom_right(gpu_t* gpu) {
+        uint32_t value = gpu->gp0_cmd_buffer.buffer[0];
+
         gpu->drawing_area_right = value & 0x3ff;
         gpu->drawing_area_top = (value >> 10) & 0x3ff;
     }
     
-    void gp0_set_drawing_offset(gpu_t* gpu, uint32_t value) {
+    void gp0_set_drawing_offset(gpu_t* gpu) {
+        uint32_t value = gpu->gp0_cmd_buffer.buffer[0];
+
         gpu->drawing_offset_x = sign_extend_11(value & 0x7ff);
         gpu->drawing_offset_y = sign_extend_11((value >> 11) & 0x7ff);
     }
 
-    void gp0_set_mask_bits(gpu_t* gpu, uint32_t value) {
+    void gp0_set_mask_bits(gpu_t* gpu) {
+        uint32_t value = gpu->gp0_cmd_buffer.buffer[0];
+
         gpu->stat.set_mask_bit_on_draw = (value >> 0) & 0x1;
         gpu->stat.preserve_masked_pixels = (value >> 1) & 0x1;
+    }
+}
+
+namespace ps1 {
+    umap_t<uint32_t, gp0_fn_info_t> gp0_fns = {
+        { 0x00, { gp0_nop, 1 } },
+        { 0x01, { gp0_clear_cache, 1 } },
+        { 0x28, { gp0_quad_mono_opaque, 5 } },
+        { 0xA0, { gp0_load_texture, 3 } },
+        { 0xE1, { gp0_set_draw_mode, 1 } },
+        { 0xE2, { gp0_config_texture_window, 1 } },
+        { 0xE3, { gp0_set_draw_area_top_left, 1 } },
+        { 0xE4, { gp0_set_draw_area_bottom_right, 1 } },
+        { 0xE5, { gp0_set_drawing_offset, 1 } },
+        { 0xE6, { gp0_set_mask_bits, 1 } },
+    };
+
+    gp0_fn_info_t get_gp0_fn_info(uint32_t opcode) {
+        auto it = gp0_fns.find(opcode);
+
+        if (it == gp0_fns.end()) {
+            return { nullptr, 0 };
+        }
+
+        return it->second;
+    }
+}
+
+void ps1::gp0(gpu_t* gpu, uint32_t value) {
+    if (gpu->gp0_fn_info.args_left == 0) {
+        gpu->gp0_cmd_opcode = value >> 24;
+
+        gp0_fn_info_t info = get_gp0_fn_info(gpu->gp0_cmd_opcode);
+
+        ASSERT(info.fn, "ILLEGAL GP0 OPCODE");
+
+        gpu->gp0_fn_info = info;
+        gpu->gp0_cmd_buffer.size = 0;
+    }
+
+    gpu->gp0_fn_info.args_left--;
+
+    if (gpu->gp0_data_mode == gp0_data_mode_t::command) {
+        gpu->gp0_cmd_buffer.push(value);
+
+        if (gpu->gp0_fn_info.args_left == 0) {
+            gpu->gp0_fn_info.fn(gpu);
+        }
+    } else if (gpu->gp0_data_mode == gp0_data_mode_t::texture) {
+        // ! copy data to vram
+
+        if (gpu->gp0_fn_info.args_left == 0) {
+            gpu->gp0_data_mode = gp0_data_mode_t::command;
+        }
+    } else {
+        ASSERT(false, "ILLEGAL GP0 DATA MODE");
     }
 }
 
@@ -162,60 +210,6 @@ namespace ps1 {
     }
 }
 
-void ps1::gp0(gpu_t* gpu, uint32_t value) {
-    uint32_t opcode = value >> 24;
-
-    switch(opcode) {
-        case 0x00: {
-            // * NOP. does not take up space in fifo
-
-            break;
-        }
-
-        case 0xE1: {
-            gp0_set_draw_mode(gpu, value);
-
-            break;
-        }
-
-        case 0xE2: {
-            gp0_config_texture_window(gpu, value);
-
-            break;
-        }
-
-        case 0xE3: {
-            gp0_set_draw_area_top_left(gpu, value);
-
-            break;
-        }
-
-        case 0xE4: {
-            gp0_set_draw_area_bottom_right(gpu, value);
-
-            break;
-        }
-
-        case 0xE5: {
-            gp0_set_drawing_offset(gpu, value);
-
-            break;
-        }
-
-        case 0xE6: {
-            gp0_set_mask_bits(gpu, value);
-
-            break;
-        }
-
-        default: {
-            ASSERT(false, "ILLEGAL GP0 OPCODE");
-
-            break;
-        }
-    }
-}
-
 void ps1::gp1(gpu_t* gpu, uint32_t value) {
     uint32_t opcode = value >> 24;
 
@@ -262,4 +256,61 @@ void ps1::gp1(gpu_t* gpu, uint32_t value) {
             break;
         }
     }
+}
+
+void ps1::gpu_save_state(gpu_t* gpu) {
+    file::write32(gpu->stat.raw);
+
+    file::write32(gpu->rect_texture_x_flip);
+    file::write32(gpu->rect_texture_y_flip);
+    file::write32(gpu->texture_window_x_mask);
+    file::write32(gpu->texture_window_y_mask);
+    file::write32(gpu->texture_window_x_offset);
+    file::write32(gpu->texture_window_y_offset);
+    file::write32(gpu->drawing_area_left);
+    file::write32(gpu->drawing_area_top);
+    file::write32(gpu->drawing_area_right);
+    file::write32(gpu->drawing_area_bottom);
+    file::write32(gpu->drawing_offset_x);
+    file::write32(gpu->drawing_offset_y);
+    file::write32(gpu->display_vram_x_start);
+    file::write32(gpu->display_vram_y_start);
+    file::write32(gpu->display_horiz_start);
+    file::write32(gpu->display_horiz_end);
+    file::write32(gpu->display_line_start);
+    file::write32(gpu->display_line_end);
+
+    // file::write32(gpu->gp0_cmd_args_left);
+    // file::write32(gpu->gp0_cmd_opcode);
+}
+
+void ps1::gpu_load_state(gpu_t* gpu) {
+    gpu->stat.raw = file::read32();
+    
+    gpu->rect_texture_x_flip = file::read32();
+    gpu->rect_texture_y_flip = file::read32();
+    gpu->texture_window_x_mask = file::read32();
+    gpu->texture_window_y_mask = file::read32();
+    gpu->texture_window_x_offset = file::read32();
+    gpu->texture_window_y_offset = file::read32();
+    gpu->drawing_area_left = file::read32();
+    gpu->drawing_area_top = file::read32();
+    gpu->drawing_area_right = file::read32();
+    gpu->drawing_area_bottom = file::read32();
+    gpu->drawing_offset_x = file::read32();
+    gpu->drawing_offset_y = file::read32();
+    gpu->display_vram_x_start = file::read32();
+    gpu->display_vram_y_start = file::read32();
+    gpu->display_horiz_start = file::read32();
+    gpu->display_horiz_end = file::read32();
+    gpu->display_line_start = file::read32();
+    gpu->display_line_end = file::read32();
+
+    // gpu->gp0_cmd_args_left = file::read32();
+    // gpu->gp0_cmd_opcode = file::read32();
+    // if (gpu->gp0_cmd_args_left > 0) {
+    //     gp0_cmd_fn_info_t info = get_gp0_fn_info(gpu->gp0_cmd_opcode);
+        
+    //     gpu->
+    // }
 }
