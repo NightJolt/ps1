@@ -180,6 +180,10 @@ namespace ps1 {
         // todo: clear fifo and invalidate cache
     }
 
+    void gp1_set_display_disabled(gpu_t* gpu, uint32_t value) {
+        gpu->stat.display_disable = value & 0x1;
+    }
+
     void gp1_set_display_mode(gpu_t* gpu, uint32_t value) {
         gpu->stat.horizontal_resolution_1 = (value >> 0) & 0x3;
         gpu->stat.vertical_resolution = (value >> 2) & 0x1;
@@ -216,6 +220,12 @@ void ps1::gp1(gpu_t* gpu, uint32_t value) {
     switch(opcode) {
         case 0x00: {
             gp1_reset(gpu);
+
+            break;
+        }
+
+        case 0x03: {
+            gp1_set_display_disabled(gpu, value);
 
             break;
         }
