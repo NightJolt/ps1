@@ -122,4 +122,5 @@ namespace ps1 {
     struct bios_t;
     struct ram_t;
     struct dma_t;
+    struct gpu_t;
 }
