@@ -375,7 +375,7 @@ namespace ps1 {
                     static constexpr uint32_t instr_radius = 24;
 
                     if (follow_pc) {
-                        addr = cpu->cpc;
+                        addr = cpu->pc;
                         update = cpu->state == cpu_state_t::running;
                     }
 
