@@ -290,8 +290,11 @@ void ps1::gpu_save_state(gpu_t* gpu) {
     file::write32(gpu->display_line_start);
     file::write32(gpu->display_line_end);
 
-    // file::write32(gpu->gp0_cmd_args_left);
-    // file::write32(gpu->gp0_cmd_opcode);
+    file::write((uint8_t*)gpu->gp0_cmd_buffer.buffer, sizeof(gpu->gp0_cmd_buffer.buffer));
+    file::write32(gpu->gp0_cmd_buffer.size);
+    file::write32(gpu->gp0_fn_info.args_left);
+    file::write32(gpu->gp0_cmd_opcode);
+    file::write32((uint32_t)gpu->gp0_data_mode);
 }
 
 void ps1::gpu_load_state(gpu_t* gpu) {
@@ -315,12 +318,14 @@ void ps1::gpu_load_state(gpu_t* gpu) {
     gpu->display_horiz_end = file::read32();
     gpu->display_line_start = file::read32();
     gpu->display_line_end = file::read32();
+    
+    file::read((uint8_t*)gpu->gp0_cmd_buffer.buffer, sizeof(gpu->gp0_cmd_buffer.buffer));
+    gpu->gp0_cmd_buffer.size = file::read32();
+    gpu->gp0_fn_info.args_left = file::read32();
+    gpu->gp0_cmd_opcode = file::read32();
+    gpu->gp0_data_mode = (gp0_data_mode_t)file::read32();
 
-    // gpu->gp0_cmd_args_left = file::read32();
-    // gpu->gp0_cmd_opcode = file::read32();
-    // if (gpu->gp0_cmd_args_left > 0) {
-    //     gp0_cmd_fn_info_t info = get_gp0_fn_info(gpu->gp0_cmd_opcode);
-        
-    //     gpu->
-    // }
+    if (gpu->gp0_fn_info.args_left > 0) {
+        gpu->gp0_fn_info.fn = get_gp0_fn_info(gpu->gp0_cmd_opcode).fn;
+    }
 }
