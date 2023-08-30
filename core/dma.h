@@ -52,9 +52,9 @@ namespace ps1 {
                 uint32_t raw;
             };
 
-            // * onlu for immediate and request sync modes
+            // * only for immediate and request sync modes
             uint32_t get_transfer_size() {
-                return base * (control.sync_mode == control_t::sync_mode_t::immediate) ? block : 1;
+                return (block & 0xFFFF) * ((control.sync_mode == control_t::sync_mode_t::request) ? ((block >> 16) & 0xFFFF) : 1);
             }
             
             uint32_t base; // * only [0:23] bits are used

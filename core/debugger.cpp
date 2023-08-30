@@ -487,13 +487,103 @@ namespace ps1 {
 
         ImGui::End();
     }
+
+    void display_gpu_view(gpu_t* gpu) {
+        ImGui::Begin("GPU");
+
+        ImGui::End();
+    }
+
+    void dma_channel_view(dma_t::channel_t* channel, uint32_t ind) {
+        static const char* channel_str[] = {
+            "MDECin",
+            "MDECout",
+            "GPU",
+            "CDROM",
+            "SPU",
+            "PIO",
+            "OTC",
+        };
+
+        if (ImGui::TreeNode(channel_str[ind])) {
+            ImGui::Text("Base: 0x%08X", channel->base);
+            ImGui::Text("Block: 0x%08X", channel->block);
+
+            if (ImGui::TreeNode("Control")) {
+                ImGui::Text("Direction: %s", channel->control.direction == dma_t::channel_t::control_t::transfer_dir_t::device_to_ram ? "device to ram" : "ram to device");
+                ImGui::Text("Addr Step: %s", channel->control.addr_step ? "-4" : "+4");
+                ImGui::Text("Chopping Enable: %s", channel->control.chopping_enable ? "true" : "false");
+                ImGui::Text("Sync Mode: %s", channel->control.sync_mode == dma_t::channel_t::control_t::sync_mode_t::immediate ? "immediate" : channel->control.sync_mode == dma_t::channel_t::control_t::sync_mode_t::request ? "request" : "linked list");
+                ImGui::Text("Chopping DMA Window Size: %u", channel->control.chopping_dma_window_size);
+                ImGui::Text("Chopping CPU Window Size: %u", channel->control.chopping_cpu_window_size);
+                ImGui::Text("Start Busy: %s", channel->control.start_busy ? "true" : "false");
+                ImGui::Text("Start Trigger: %s", channel->control.start_trigger ? "true" : "false");
+
+                ImGui::TreePop();
+            }
+
+            ImGui::TreePop();
+        }
+    }
+
+    void display_dma_view(dma_t* dma) {
+        ImGui::Begin("DMA");
+
+            if (ImGui::TreeNode("Channels")) {
+                int channel_ind = 0;
+                for (auto& channel : dma->channels) {
+                    dma_channel_view(&channel, channel_ind++);
+                }
+
+                ImGui::TreePop();
+            }
+            
+            ImGui::Text("Control: 0x%08X", dma->control);
+            ImGui::Text("Interrupt: 0x%08X", dma->interrupt.get_raw());
+
+        ImGui::End();
+    }
+}
+
+namespace {
+    static bool show_emulation_view = true;
+    static bool show_cpu_view = true;
+    static bool show_gpu_view = false;
+    static bool show_dma_view = false;
+    static bool show_instr_view = true;
+    static bool show_memory_view = true;
+    static bool show_breakpoints_view = true;
+    static bool show_log_view = true;
+
+    void display_nav_bar() {
+        if (ImGui::BeginMainMenuBar()) {
+            if (ImGui::BeginMenu("Window")) {
+                ImGui::MenuItem("Emulation", nullptr, &show_emulation_view);
+                ImGui::MenuItem("CPU", nullptr, &show_cpu_view);
+                ImGui::MenuItem("GPU", nullptr, &show_gpu_view);
+                ImGui::MenuItem("DMA", nullptr, &show_dma_view);
+                ImGui::MenuItem("Instructions", nullptr, &show_instr_view);
+                ImGui::MenuItem("Memory", nullptr, &show_memory_view);
+                ImGui::MenuItem("Breakpoints", nullptr, &show_breakpoints_view);
+                ImGui::MenuItem("Log", nullptr, &show_log_view);
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+    }
 }
 
 void ps1::debugger::display(ps1_t* console) {
-    display_emulation_view(console);
-    display_cpu_view(&console->cpu, &console->bus);
-    display_instr_view(&console->cpu, &console->bus);
-    display_memory_view(&console->bus);
-    display_breakpoints_view(&console->cpu);
-    logger::display();
+    display_nav_bar();
+
+    if (show_emulation_view) display_emulation_view(console);
+    if (show_cpu_view) display_cpu_view(&console->cpu, &console->bus);
+    if (show_gpu_view) display_gpu_view(&console->gpu);
+    if (show_dma_view) display_dma_view(&console->dma);
+    if (show_instr_view) display_instr_view(&console->cpu, &console->bus);
+    if (show_memory_view) display_memory_view(&console->bus);
+    if (show_breakpoints_view) display_breakpoints_view(&console->cpu);
+    if (show_log_view) logger::display();
 }
