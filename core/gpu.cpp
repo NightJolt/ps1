@@ -16,6 +16,21 @@ namespace {
     uint32_t sign_extend_11(uint32_t value) {
         return ((int16_t)(value << 5)) >> 5;
     }
+
+    struct pos_t {
+        pos_t(uint32_t v) : x((int16_t)v), y((int16_t)(v >> 16)) {}
+
+        int32_t x;
+        int32_t y;
+    };
+
+    struct rgb_t {
+        rgb_t(uint32_t v) :  r((int8_t)v), g((int8_t)(v >> 8)), b((int8_t)(v >> 16)) {}
+
+        int8_t r;
+        int8_t g;
+        int8_t b;
+    };
 }
 
 namespace ps1 {
@@ -35,6 +50,18 @@ namespace ps1 {
 
     void gp0_triangle_shaded_opaque(gpu_t* gpu) {
         logger::push("GP0: drawing shaded triangle", logger::type_t::message, "gpu");
+
+        pos_t vertice_pos[] = {
+            gpu->gp0_cmd_buffer.buffer[1],
+            gpu->gp0_cmd_buffer.buffer[3],
+            gpu->gp0_cmd_buffer.buffer[5],
+        };
+
+        rgb_t vertice_rgb[] = {
+            gpu->gp0_cmd_buffer.buffer[0],
+            gpu->gp0_cmd_buffer.buffer[2],
+            gpu->gp0_cmd_buffer.buffer[4],
+        };
     }
 
     void gp0_quad_shaded_opaque(gpu_t* gpu) {
