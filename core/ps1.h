@@ -10,6 +10,7 @@
 #include "gpu.h"
 #include "dma.h"
 #include "nodevice.h"
+#include "vram.h"
 
 namespace ps1 {
     struct ps1_t {
@@ -21,6 +22,7 @@ namespace ps1 {
         expansion_t expansion;
         gpu_t gpu;
         dma_t dma;
+        vram_t vram;
     };
 
     void ps1_init(ps1_t*, const str_t&);

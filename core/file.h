@@ -4,6 +4,7 @@
 
 namespace ps1::file {
     uint8_t* read_binary(const str_t&);
+    std::string read_text(const str_t&);
 
     void open_writable(const str_t&);
     void write(uint8_t*, size_t);

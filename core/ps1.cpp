@@ -105,6 +105,7 @@ namespace {
 void ps1::ps1_init(ps1_t* console, const str_t& bios_path) {
     ps1_interconnect(console);
     bios_init(&console->bios, bios_path);
+    vram_init(&console->vram);
     ps1_soft_reset(console);
 }
 
@@ -113,6 +114,7 @@ void ps1::ps1_exit(ps1_t* console) {
     bus_exit(&console->bus);
     ram_exit(&console->ram);
     dma_exit(&console->dma);
+    vram_exit(&console->vram);
     bios_exit(&console->bios);
 }
 

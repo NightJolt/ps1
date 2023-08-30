@@ -1,18 +1,40 @@
 #include "file.h"
 
 #include <fstream>
+#include <limits>
+
+namespace {
+    uint8_t* read_file(const str_t& path, uint32_t flags) {
+        std::ifstream file(path, flags);
+
+        if (!file.is_open()) return nullptr;
+
+        file.ignore(std::numeric_limits<std::streamsize>::max());
+        uint32_t size = file.gcount();
+        file.clear();
+        file.seekg(0, std::ios::beg);
+
+        uint8_t* data = new uint8_t[size];
+        file.read((char*)data, size);
+
+        return data;
+    }
+}
 
 uint8_t* ps1::file::read_binary(const str_t& path) {
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    return read_file(path, std::ios::binary);
+}
+
+std::string ps1::file::read_text(const str_t& path) {
+    std::ifstream file(path);
+    std::string data;
+    std::string line;
 
     if (!file.is_open()) return nullptr;
 
-    auto size = file.tellg();
-
-    file.seekg(0, std::ios::beg);
-
-    uint8_t* data = new uint8_t[size];
-    file.read((char*)data, size);
+    while (std::getline(file, line)) {
+        data += line + "\n";
+    }
 
     return data;
 }

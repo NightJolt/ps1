@@ -16,10 +16,13 @@
 #include "debugger.h"
 
 int main() {
+    ps1::render::init();
+
+    ps1::render::load_vertex_shader("../core/shaders/vertex.glsl");
+    ps1::render::load_fragment_shader("../core/shaders/fragment.glsl");
+
     ps1::ps1_t console;
     ps1::ps1_init(&console, "../bios/SCPH1001.bin");
-
-    ps1::render::init();
 
     while (!ps1::render::should_close()) {
         ps1::render::begin_frame();
@@ -31,9 +34,9 @@ int main() {
         ps1::render::end_frame();
     }
 
-    ps1::render::exit();
-
     ps1::ps1_exit(&console);
+
+    ps1::render::exit();
     
     return 0;
 }
