@@ -491,6 +491,75 @@ namespace ps1 {
     void display_gpu_view(gpu_t* gpu) {
         ImGui::Begin("GPU");
 
+            if (ImGui::TreeNode("GPUSTAT")) {
+                gpu_stat_t stat = (gpu_stat_t)gpu->stat.get();
+
+                ImGui::Text("texture page x base: %u", stat.texture_page_x_base);
+                ImGui::Text("texture page y base 1: %u", stat.texture_page_y_base);
+                ImGui::Text("semi transparency: %u", stat.semi_transparency);
+                ImGui::Text("texture depth: %u", stat.texture_depth);
+                ImGui::Text("dither: %u", stat.dither);
+                ImGui::Text("draw to display: %u", stat.draw_to_display);
+                ImGui::Text("set mask bit on draw: %u", stat.set_mask_bit_on_draw);
+                ImGui::Text("preserve masked pixels: %u", stat.preserve_masked_pixels);
+                ImGui::Text("interlance field: %u", stat.interlance_field);
+                ImGui::Text("reverse flag: %u", stat.reverse_flag);
+                ImGui::Text("texture page y base 2: %u", stat.texture_page_y_base_2);
+                ImGui::Text("horizontal resolution 2: %u", stat.horizontal_resolution_2);
+                ImGui::Text("horizontal resolution 1: %u", stat.horizontal_resolution_1);
+                ImGui::Text("vertical resolution: %u", stat.vertical_resolution);
+                ImGui::Text("video mode: %u", stat.video_mode);
+                ImGui::Text("display area color depth: %u", stat.display_area_color_depth);
+                ImGui::Text("vertical interlace: %u", stat.vertical_interlace);
+                ImGui::Text("display disable: %u", stat.display_disable);
+                ImGui::Text("interrupt request: %u", stat.interrupt_request);
+                ImGui::Text("dma data request: %u", stat.dma_data_request);
+                ImGui::Text("ready to receive cmd: %u", stat.ready_to_receive_cmd);
+                ImGui::Text("ready to send vram to cpu: %u", stat.ready_to_send_vram_to_cpu);
+                ImGui::Text("ready to recieve dma block: %u", stat.ready_to_recieve_dma_block);
+                ImGui::Text("dma dir: %u", stat.dma_dir);
+                ImGui::Text("draw mode: %u", stat.draw_mode);
+
+                ImGui::TreePop();
+            }
+
+            ImGui::Text("rect texture x flip: %u", gpu->rect_texture_x_flip);
+            ImGui::Text("rect texture y flip: %u", gpu->rect_texture_y_flip);
+            ImGui::Text("texture window x mask: %u", gpu->texture_window_x_mask);
+            ImGui::Text("texture window y mask: %u", gpu->texture_window_y_mask);
+            ImGui::Text("texture window x offset: %u", gpu->texture_window_x_offset);
+            ImGui::Text("texture window y offset: %u", gpu->texture_window_y_offset);
+            ImGui::Text("drawing area left: %u", gpu->drawing_area_left);
+            ImGui::Text("drawing area top: %u", gpu->drawing_area_top);
+            ImGui::Text("drawing area right: %u", gpu->drawing_area_right);
+            ImGui::Text("drawing area bottom: %u", gpu->drawing_area_bottom);
+            ImGui::Text("drawing offset x: %d", gpu->drawing_offset_x);
+            ImGui::Text("drawing offset y: %d", gpu->drawing_offset_y);
+            ImGui::Text("display vram x start: %u", gpu->display_vram_x_start);
+            ImGui::Text("display vram y start: %u", gpu->display_vram_y_start);
+            ImGui::Text("display horizontal start: %u", gpu->display_horiz_start);
+            ImGui::Text("display horizontal end: %u", gpu->display_horiz_end);
+            ImGui::Text("display line start: %u", gpu->display_line_start);
+            ImGui::Text("display line end: %u", gpu->display_line_end);
+
+            if (ImGui::TreeNode("GP0 Command Buffer")) {
+                ImGui::Text("opcode: %u", gpu->gp0_cmd_opcode);
+                ImGui::Text("commands received: %u (max 16)", gpu->gp0_cmd_buffer.size);
+                ImGui::Text("commands left: %u", gpu->gp0_fn_info.args_left);
+                ImGui::Text("data mode: %s", gpu->gp0_data_mode == gp0_data_mode_t::command ? "command" : "data");
+
+                if (ImGui::TreeNode("Commands")) {
+                    for (uint32_t i = 0; i < gpu->gp0_cmd_buffer.size; i++) {
+                        ImGui::Text("0x%08X", gpu->gp0_cmd_buffer.buffer[i]);
+                    }
+
+                    ImGui::TreePop();
+                }
+
+                ImGui::TreePop();
+            }
+
+
         ImGui::End();
     }
 
