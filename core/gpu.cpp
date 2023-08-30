@@ -29,6 +29,18 @@ namespace ps1 {
         logger::push("GP0: drawing quad", logger::type_t::message, "gpu");
     }
 
+    void gp0_quad_blend_opaque_textured(gpu_t* gpu) {
+        logger::push("GP0: drawing textured quad", logger::type_t::message, "gpu");
+    }
+
+    void gp0_triangle_shaded_opaque(gpu_t* gpu) {
+        logger::push("GP0: drawing shaded triangle", logger::type_t::message, "gpu");
+    }
+
+    void gp0_quad_shaded_opaque(gpu_t* gpu) {
+        logger::push("GP0: drawing shaded quad", logger::type_t::message, "gpu");
+    }
+
     void gp0_load_texture(gpu_t* gpu) {
         uint32_t resolution = gpu->gp0_cmd_buffer.buffer[2];
         uint32_t width = resolution & 0xffff;
@@ -106,6 +118,9 @@ namespace ps1 {
         { 0x00, { gp0_nop, 1 } },
         { 0x01, { gp0_clear_cache, 1 } },
         { 0x28, { gp0_quad_mono_opaque, 5 } },
+        { 0x2C, { gp0_quad_blend_opaque_textured, 9 } },
+        { 0x30, { gp0_triangle_shaded_opaque, 6 } },
+        { 0x38, { gp0_quad_shaded_opaque, 8 } },
         { 0xA0, { gp0_load_texture, 3 } },
         { 0xC0, { gp0_store_texture, 3 } },
         { 0xE1, { gp0_set_draw_mode, 1 } },
@@ -159,6 +174,12 @@ void ps1::gp0(gpu_t* gpu, uint32_t value) {
 }
 
 namespace ps1 {
+    void gp1_clear_fifo(gpu_t* gpu) {
+        gpu->gp0_cmd_buffer.size = 0;
+        gpu->gp0_fn_info.args_left = 0;
+        gpu->gp0_data_mode = gp0_data_mode_t::command;
+    }
+
     void gp1_reset(gpu_t* gpu) {
         gpu->stat.raw = 0x14802000;
         
@@ -182,6 +203,11 @@ namespace ps1 {
         gpu->display_line_end = 0x100;
 
         // todo: clear fifo and invalidate cache
+        gp1_clear_fifo(gpu);
+    }
+
+    void gp1_acknowledge_irq(gpu_t* gpu) {
+        gpu->stat.interrupt_request = 0;
     }
 
     void gp1_set_display_disabled(gpu_t* gpu, uint32_t value) {
@@ -224,6 +250,18 @@ void ps1::gp1(gpu_t* gpu, uint32_t value) {
     switch(opcode) {
         case 0x00: {
             gp1_reset(gpu);
+
+            break;
+        }
+
+        case 0x01: {
+            gp1_clear_fifo(gpu);
+
+            break;
+        }
+
+        case 0x02: {
+            gp1_acknowledge_irq(gpu);
 
             break;
         }
