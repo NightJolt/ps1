@@ -5,11 +5,6 @@ void ps1::gpu_init(gpu_t* gpu) {
     gpu->stat.raw = 0;
     gpu->stat.display_disable = 1;
 
-    // ! temp override
-    gpu->stat.ready_to_receive_cmd = 1;
-    gpu->stat.ready_to_send_vram_to_cpu = 1;
-    gpu->stat.ready_to_recieve_dma_block = 1;
-
     gpu->gp0_fn_info.args_left = 0;
     gpu->gp0_cmd_buffer.size = 0;
     gpu->gp0_data_mode = gp0_data_mode_t::command;
@@ -44,6 +39,14 @@ namespace ps1 {
         
         gpu->gp0_fn_info.args_left = texture_size >> 1;
         gpu->gp0_data_mode = gp0_data_mode_t::texture;
+    }
+
+    void gp0_store_texture(gpu_t* gpu) {
+        uint32_t resolution = gpu->gp0_cmd_buffer.buffer[2];
+        uint32_t width = resolution & 0xffff;
+        uint32_t height = resolution >> 16;
+        
+        logger::push("GP0: storing image into ram", logger::type_t::message, "gpu");
     }
 
     void gp0_set_draw_mode(gpu_t* gpu) {
@@ -104,6 +107,7 @@ namespace ps1 {
         { 0x01, { gp0_clear_cache, 1 } },
         { 0x28, { gp0_quad_mono_opaque, 5 } },
         { 0xA0, { gp0_load_texture, 3 } },
+        { 0xC0, { gp0_store_texture, 3 } },
         { 0xE1, { gp0_set_draw_mode, 1 } },
         { 0xE2, { gp0_config_texture_window, 1 } },
         { 0xE3, { gp0_set_draw_area_top_left, 1 } },

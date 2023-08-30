@@ -59,6 +59,11 @@ namespace ps1 {
             // ! temp hack to avoid loophole
             vertical_resolution = 0;
 
+            // ! temp override. needs proper timing to be emulated
+            ready_to_receive_cmd = 1;
+            ready_to_send_vram_to_cpu = 1;
+            ready_to_recieve_dma_block = 1;
+
             return raw;
         }
     };
