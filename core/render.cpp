@@ -8,6 +8,7 @@ GLFWwindow* ps1::render::init() {
     glfwInit();
     ::window = glfwCreateWindow(1536, 864, "ps1", NULL, NULL);
     glfwMakeContextCurrent(::window);
+    glfwSwapInterval(0);
 
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(::window, true);
