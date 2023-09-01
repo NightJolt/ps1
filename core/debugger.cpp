@@ -1,5 +1,8 @@
 #include "debugger.h"
 #include "bus.h"
+#include "ps1.h"
+#include "emulation.h"
+#include "logger.h"
 
 namespace {
     str_t byte_to_bin(uint8_t val) {
@@ -27,7 +30,7 @@ namespace {
 }
 
 namespace ps1 {
-    void display_emulation_view(ps1_t* console) {
+    void display_emulation_view(ps1_t* console, emulation_settings_t* settings) {
         static char save_state_path[128] = "saves/state.bin";
         static char load_state_path[128] = "saves/state.bin";
 
@@ -54,6 +57,14 @@ namespace ps1 {
 
             ImGui::SetNextItemWidth(-1);
             ImGui::InputText("##load_state_path", load_state_path, sizeof(load_state_path));
+
+            ImGui::Spacing();
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("Instructions Per Frame");
+            ImGui::SameLine();
+            if (ImGui::InputInt("##instr_per_frame", &settings->instr_per_frame)) {
+                settings->instr_per_frame = std::min(std::max(settings->instr_per_frame, 0), 30000);
+            }
 
         ImGui::End();
     }
@@ -654,10 +665,10 @@ namespace {
     }
 }
 
-void ps1::debugger::display(ps1_t* console) {
+void ps1::debugger::display(ps1_t* console, emulation_settings_t* settings) {
     display_nav_bar();
 
-    if (show_emulation_view) display_emulation_view(console);
+    if (show_emulation_view) display_emulation_view(console, settings);
     if (show_cpu_view) display_cpu_view(&console->cpu, &console->bus);
     if (show_gpu_view) display_gpu_view(&console->gpu);
     if (show_dma_view) display_dma_view(&console->dma);

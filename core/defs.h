@@ -125,4 +125,7 @@ namespace ps1 {
     struct dma_t;
     struct gpu_t;
     struct vram_t;
+
+    struct ps1_t;
+    struct emulation_settings_t;
 }
