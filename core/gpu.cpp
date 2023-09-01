@@ -29,15 +29,55 @@ namespace ps1 {
     }
 
     void gp0_quad_mono_opaque(gpu_t* gpu) {
-        logger::push("GP0: drawing quad", logger::type_t::message, "gpu");
+        // logger::push("GP0: drawing quad", logger::type_t::message, "gpu");
+
+        pos_t vertice_pos[] = {
+            gpu->gp0_cmd_buffer.buffer[1],
+            gpu->gp0_cmd_buffer.buffer[2],
+            gpu->gp0_cmd_buffer.buffer[3],
+            gpu->gp0_cmd_buffer.buffer[4],
+        };
+
+        rgb_t color = gpu->gp0_cmd_buffer.buffer[0];
+
+        quad_t quad = {
+            {
+                { vertice_pos[0], color },
+                { vertice_pos[1], color },
+                { vertice_pos[2], color },
+                { vertice_pos[3], color },
+            }
+        };
+
+        vram_draw_quad(gpu->vram, quad);
     }
 
     void gp0_quad_blend_opaque_textured(gpu_t* gpu) {
-        logger::push("GP0: drawing textured quad", logger::type_t::message, "gpu");
+        // logger::push("GP0: drawing textured quad", logger::type_t::message, "gpu");
+
+        pos_t vertice_pos[] = {
+            gpu->gp0_cmd_buffer.buffer[1],
+            gpu->gp0_cmd_buffer.buffer[3],
+            gpu->gp0_cmd_buffer.buffer[5],
+            gpu->gp0_cmd_buffer.buffer[7],
+        };
+
+        rgb_t color = { .3f, .3f, .3f };
+
+        quad_t quad = {
+            {
+                { vertice_pos[0], color },
+                { vertice_pos[1], color },
+                { vertice_pos[2], color },
+                { vertice_pos[3], color },
+            }
+        };
+
+        vram_draw_quad(gpu->vram, quad);
     }
 
     void gp0_triangle_shaded_opaque(gpu_t* gpu) {
-        logger::push("GP0: drawing shaded triangle", logger::type_t::message, "gpu");
+        // logger::push("GP0: drawing shaded triangle", logger::type_t::message, "gpu");
 
         pos_t vertice_pos[] = {
             gpu->gp0_cmd_buffer.buffer[1],
@@ -63,7 +103,32 @@ namespace ps1 {
     }
 
     void gp0_quad_shaded_opaque(gpu_t* gpu) {
-        logger::push("GP0: drawing shaded quad", logger::type_t::message, "gpu");
+        // logger::push("GP0: drawing shaded quad", logger::type_t::message, "gpu");
+
+        pos_t vertice_pos[] = {
+            gpu->gp0_cmd_buffer.buffer[1],
+            gpu->gp0_cmd_buffer.buffer[3],
+            gpu->gp0_cmd_buffer.buffer[5],
+            gpu->gp0_cmd_buffer.buffer[7],
+        };
+
+        rgb_t vertice_rgb[] = {
+            gpu->gp0_cmd_buffer.buffer[0],
+            gpu->gp0_cmd_buffer.buffer[2],
+            gpu->gp0_cmd_buffer.buffer[4],
+            gpu->gp0_cmd_buffer.buffer[6],
+        };
+
+        quad_t quad = {
+            {
+                { vertice_pos[0], vertice_rgb[0] },
+                { vertice_pos[1], vertice_rgb[1] },
+                { vertice_pos[2], vertice_rgb[2] },
+                { vertice_pos[3], vertice_rgb[3] },
+            }
+        };
+
+        vram_draw_quad(gpu->vram, quad);
     }
 
     void gp0_load_texture(gpu_t* gpu) {

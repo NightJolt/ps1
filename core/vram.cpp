@@ -50,13 +50,28 @@ void ps1::vram_exit(vram_t* vram) {
 }
 
 void ps1::vram_draw_triangle(vram_t* vram, triangle_t triangle) {
-    glBindBuffer(GL_ARRAY_BUFFER, vram->vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangle), &triangle, GL_STATIC_DRAW);
-
     glBindFramebuffer(GL_FRAMEBUFFER, vram->fbo);
     glViewport(0, 0, vram_width, vram_height);
     
+    glBindBuffer(GL_ARRAY_BUFFER, vram->vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triangle_t), &triangle, GL_STATIC_DRAW);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void ps1::vram_draw_quad(vram_t* vram, quad_t quad) {
+    triangle_t triangles[2] = {
+        { quad.vertices[0], quad.vertices[1], quad.vertices[2] },
+        { quad.vertices[1], quad.vertices[2], quad.vertices[3] }
+    };
+
+    glBindFramebuffer(GL_FRAMEBUFFER, vram->fbo);
+    glViewport(0, 0, vram_width, vram_height);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vram->vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triangle_t) * 2, triangles, GL_STATIC_DRAW);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
