@@ -63,11 +63,11 @@ namespace {
             ps1::bus_connect(&console->bus, nodevice_info);
 
             // * SPU memory region
-            nodevice_info.mem_range = { 0x1F801C00, 0x1F801E80 - 0x1F801C00 };
+            nodevice_info.mem_range = { 0x1F801C00, 0x1F802000 - 0x1F801C00 };
             ps1::bus_connect(&console->bus, nodevice_info);
 
             // * Expansion 2 memory region. Used for debugging
-            nodevice_info.mem_range = { 0x1F802000, 0x1F802042 - 0x1F802000 };
+            nodevice_info.mem_range = { 0x1F802000, 0x80 };
             ps1::bus_connect(&console->bus, nodevice_info);
 
             // * Interrupt control registers. Not yet needed
@@ -75,7 +75,11 @@ namespace {
             ps1::bus_connect(&console->bus, nodevice_info);
 
             // * Timer
-            nodevice_info.mem_range = { 0x1F801100, 0x1F80112F - 0x1F801100 };
+            nodevice_info.mem_range = { 0x1F801100, 0x1F801130 - 0x1F801100 };
+            ps1::bus_connect(&console->bus, nodevice_info);
+
+            // * CDROM
+            nodevice_info.mem_range = { 0x1F801800, 0x1F801810 - 0x1F801800 };
             ps1::bus_connect(&console->bus, nodevice_info);
         }
 
