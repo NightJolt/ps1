@@ -126,7 +126,7 @@ void ps1::ps1_soft_reset(ps1_t* console) {
 
     cpu_init(&console->cpu, &console->bus);
     ram_init(&console->ram);
-    gpu_init(&console->gpu);
+    gpu_init(&console->gpu, &console->vram);
     dma_init(&console->dma, &console->ram, &console->gpu);
 }
 

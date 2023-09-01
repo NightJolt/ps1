@@ -124,4 +124,5 @@ namespace ps1 {
     struct ram_t;
     struct dma_t;
     struct gpu_t;
+    struct vram_t;
 }

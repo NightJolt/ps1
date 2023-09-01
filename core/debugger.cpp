@@ -612,6 +612,14 @@ namespace ps1 {
 
         ImGui::End();
     }
+
+    void display_vram_view(vram_t* vram) {
+        ImGui::Begin("VRAM");
+
+            ImGui::Image((ImTextureID) (intptr_t) 1, ImVec2(1024, 512));
+        
+        ImGui::End();
+    }
 }
 
 namespace {
@@ -619,6 +627,7 @@ namespace {
     static bool show_cpu_view = true;
     static bool show_gpu_view = false;
     static bool show_dma_view = false;
+    static bool show_vram_view = false;
     static bool show_instr_view = true;
     static bool show_memory_view = true;
     static bool show_breakpoints_view = true;
@@ -631,6 +640,7 @@ namespace {
                 ImGui::MenuItem("CPU", nullptr, &show_cpu_view);
                 ImGui::MenuItem("GPU", nullptr, &show_gpu_view);
                 ImGui::MenuItem("DMA", nullptr, &show_dma_view);
+                ImGui::MenuItem("VRAM", nullptr, &show_vram_view);
                 ImGui::MenuItem("Instructions", nullptr, &show_instr_view);
                 ImGui::MenuItem("Memory", nullptr, &show_memory_view);
                 ImGui::MenuItem("Breakpoints", nullptr, &show_breakpoints_view);
@@ -651,6 +661,7 @@ void ps1::debugger::display(ps1_t* console) {
     if (show_cpu_view) display_cpu_view(&console->cpu, &console->bus);
     if (show_gpu_view) display_gpu_view(&console->gpu);
     if (show_dma_view) display_dma_view(&console->dma);
+    if (show_vram_view) display_vram_view(&console->vram);
     if (show_instr_view) display_instr_view(&console->cpu, &console->bus);
     if (show_memory_view) display_memory_view(&console->bus);
     if (show_breakpoints_view) display_breakpoints_view(&console->cpu);

@@ -1,7 +1,10 @@
 #include "gpu.h"
 #include "file.h"
+#include "vram.h"
 
-void ps1::gpu_init(gpu_t* gpu) {
+void ps1::gpu_init(gpu_t* gpu, vram_t* vram) {
+    gpu->vram = vram;
+
     gpu->stat.raw = 0;
     gpu->stat.display_disable = 1;
 
@@ -16,21 +19,6 @@ namespace {
     uint32_t sign_extend_11(uint32_t value) {
         return ((int16_t)(value << 5)) >> 5;
     }
-
-    struct pos_t {
-        pos_t(uint32_t v) : x((int16_t)v), y((int16_t)(v >> 16)) {}
-
-        int32_t x;
-        int32_t y;
-    };
-
-    struct rgb_t {
-        rgb_t(uint32_t v) :  r((int8_t)v), g((int8_t)(v >> 8)), b((int8_t)(v >> 16)) {}
-
-        int8_t r;
-        int8_t g;
-        int8_t b;
-    };
 }
 
 namespace ps1 {
@@ -62,6 +50,16 @@ namespace ps1 {
             gpu->gp0_cmd_buffer.buffer[2],
             gpu->gp0_cmd_buffer.buffer[4],
         };
+
+        triangle_t triangle = {
+            {
+                { vertice_pos[0], vertice_rgb[0] },
+                { vertice_pos[1], vertice_rgb[1] },
+                { vertice_pos[2], vertice_rgb[2] },
+            }
+        };
+
+        vram_draw_triangle(gpu->vram, triangle);
     }
 
     void gp0_quad_shaded_opaque(gpu_t* gpu) {

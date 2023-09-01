@@ -90,6 +90,8 @@ namespace ps1 {
     };
 
     struct gpu_t {
+        vram_t* vram;
+
         gpu_stat_t stat;
 
         bool rect_texture_x_flip;
@@ -117,7 +119,7 @@ namespace ps1 {
         gp0_data_mode_t gp0_data_mode;
     };
 
-    void gpu_init(gpu_t*);
+    void gpu_init(gpu_t*, vram_t*);
     void gpu_exit(gpu_t*);
     
     void gpu_save_state(gpu_t*);
