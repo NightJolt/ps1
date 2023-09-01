@@ -11,7 +11,7 @@ namespace ps1 {
     };
 
     struct pos_t {
-        pos_t(uint32_t v) : x(float((int16_t)v) / 1024.f), y(float((int16_t)(v >> 16)) / 512.f) {}
+        pos_t(uint32_t v) : x(float((int16_t)v) / 512.f - 1.f), y(float((int16_t)(v >> 16)) / 256.f - 1.f) {}
 
         float x;
         float y;
