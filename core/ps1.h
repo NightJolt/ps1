@@ -33,8 +33,9 @@ namespace ps1 {
     /*
     * cpu
     * ram
-    ! gpu
-    ! dma
+    * gpu
+    * dma
+    ? vram: not really needed since we will get new frame instantly after launch
     */
     void ps1_save_state(ps1_t*, const str_t&);
     void ps1_load_state(ps1_t*, const str_t&);

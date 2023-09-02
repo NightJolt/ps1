@@ -627,7 +627,7 @@ namespace ps1 {
     void display_vram_view(vram_t* vram) {
         ImGui::Begin("VRAM");
 
-            ImGui::Image((ImTextureID) (intptr_t) 1, ImVec2(1024, 512));
+            ImGui::Image((ImTextureID) (intptr_t) vram->tbo, ImVec2(1024, 512));
         
         ImGui::End();
     }
