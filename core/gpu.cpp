@@ -38,6 +38,11 @@ namespace ps1 {
             gpu->gp0_cmd_buffer.buffer[4],
         };
 
+        pos_t offset = { gpu->drawing_offset_x, gpu->drawing_offset_y };
+        for (uint32_t i = 0; i < 4; i++) {
+            vertice_pos[i] = vertice_pos[i] + offset;
+        }
+
         rgb_t color = gpu->gp0_cmd_buffer.buffer[0];
 
         quad_t quad = {
@@ -62,6 +67,11 @@ namespace ps1 {
             gpu->gp0_cmd_buffer.buffer[7],
         };
 
+        pos_t offset = { gpu->drawing_offset_x, gpu->drawing_offset_y };
+        for (uint32_t i = 0; i < 4; i++) {
+            vertice_pos[i] = vertice_pos[i] + offset;
+        }
+
         rgb_t color = { .3f, .3f, .3f };
 
         quad_t quad = {
@@ -84,6 +94,11 @@ namespace ps1 {
             gpu->gp0_cmd_buffer.buffer[3],
             gpu->gp0_cmd_buffer.buffer[5],
         };
+
+        pos_t offset = { gpu->drawing_offset_x, gpu->drawing_offset_y };
+        for (uint32_t i = 0; i < 4; i++) {
+            vertice_pos[i] = vertice_pos[i] + offset;
+        }
 
         rgb_t vertice_rgb[] = {
             gpu->gp0_cmd_buffer.buffer[0],
@@ -112,6 +127,11 @@ namespace ps1 {
             gpu->gp0_cmd_buffer.buffer[7],
         };
 
+        pos_t offset = { gpu->drawing_offset_x, gpu->drawing_offset_y };
+        for (uint32_t i = 0; i < 4; i++) {
+            vertice_pos[i] = vertice_pos[i] + offset;
+        }
+
         rgb_t vertice_rgb[] = {
             gpu->gp0_cmd_buffer.buffer[0],
             gpu->gp0_cmd_buffer.buffer[2],
@@ -138,9 +158,17 @@ namespace ps1 {
         uint32_t texture_size = width * height;
 
         texture_size += texture_size & 0x1; // * round up to be even
+
+        uint32_t xpos = gpu->gp0_cmd_buffer.buffer[1] & 0x3fe; // * 2 LSB ignored to align with pixels
+        uint32_t ypos = (gpu->gp0_cmd_buffer.buffer[1] >> 10) & 0x1ff;
         
         gpu->gp0_fn_info.args_left = texture_size >> 1;
         gpu->gp0_data_mode = gp0_data_mode_t::texture;
+
+        uint32_t xoff = gpu->stat.texture_page_x_base * 64;
+        uint32_t yoff = gpu->stat.texture_page_y_base * 256;
+
+        vram_set_texture_stream_specs(gpu->vram, xpos + xoff, ypos + yoff, width, height);
     }
 
     void gp0_store_texture(gpu_t* gpu) {
@@ -253,7 +281,7 @@ void ps1::gp0(gpu_t* gpu, uint32_t value) {
             gpu->gp0_fn_info.fn(gpu);
         }
     } else if (gpu->gp0_data_mode == gp0_data_mode_t::texture) {
-        // ! copy data to vram
+        vram_send_texture_stream_data(gpu->vram, value);
 
         if (gpu->gp0_fn_info.args_left == 0) {
             gpu->gp0_data_mode = gp0_data_mode_t::command;
