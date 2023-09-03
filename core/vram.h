@@ -44,6 +44,14 @@ namespace ps1 {
         float b;
     };
 
+    struct text_coord_t {
+        text_coord_t(uint32_t v) : x(v), y(v >> 16) {}
+        text_coord_t(float x, float y) : x(x), y(y) {}
+
+        uint16_t x;
+        uint16_t y;
+    };
+
     struct vertex_t {
         pos_t pos;
         rgb_t rgb;

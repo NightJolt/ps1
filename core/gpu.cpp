@@ -60,6 +60,14 @@ namespace ps1 {
     void gp0_quad_blend_opaque_textured(gpu_t* gpu) {
         // logger::push("GP0: drawing textured quad", logger::type_t::message, "gpu");
 
+        rgb_t color = gpu->gp0_cmd_buffer.buffer[0];
+        uint32_t clut = gpu->gp0_cmd_buffer.buffer[2] >> 16;
+        gpu_stat_t stat;
+        stat.raw = gpu->gp0_cmd_buffer.buffer[4] >> 16;
+
+        uint32_t clut_x = (clut & 0x3f) << 4;
+        uint32_t clut_y = (clut >> 6) & 0x1ff;
+
         pos_t vertice_pos[] = {
             gpu->gp0_cmd_buffer.buffer[1],
             gpu->gp0_cmd_buffer.buffer[3],
@@ -72,7 +80,12 @@ namespace ps1 {
             vertice_pos[i] = vertice_pos[i] + offset;
         }
 
-        rgb_t color = { .3f, .3f, .3f };
+        text_coord_t text_coord[] = {
+            gpu->gp0_cmd_buffer.buffer[2],
+            gpu->gp0_cmd_buffer.buffer[4],
+            gpu->gp0_cmd_buffer.buffer[6],
+            gpu->gp0_cmd_buffer.buffer[8],
+        };
 
         quad_t quad = {
             {
