@@ -95,7 +95,11 @@ namespace {
     }
 }
 
-uint32_t ps1::render::make_shader(const char* vertex_shader_path, const char* fragment_shader_path) {
+namespace {
+    umap_t<uint32_t, uint32_t> shaders;
+}
+
+void ps1::render::make_shader(const char* vertex_shader_path, const char* fragment_shader_path, uint32_t type) {
     uint32_t vertex_shader = load_shader(vertex_shader_path, GL_VERTEX_SHADER);
     uint32_t fragment_shader = load_shader(fragment_shader_path, GL_FRAGMENT_SHADER);
 
@@ -106,10 +110,13 @@ uint32_t ps1::render::make_shader(const char* vertex_shader_path, const char* fr
 
     glLinkProgram(program);
     glValidateProgram(program);
-    glUseProgram(program);
 
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 
-    return program;
+    shaders[type] = program;
+}
+
+void ps1::render::use_shader(uint32_t type) {
+    glUseProgram(shaders[type]);
 }

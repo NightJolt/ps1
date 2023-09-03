@@ -11,5 +11,6 @@ namespace ps1::render {
 
     bool should_close();
 
-    uint32_t make_shader(const char*, const char*);
+    void make_shader(const char*, const char*, uint32_t);
+    void use_shader(uint32_t);
 }
