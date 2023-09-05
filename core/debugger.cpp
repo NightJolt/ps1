@@ -227,17 +227,19 @@ namespace ps1 {
 
                 ImGui::SameLine();
 
-                if (ImGui::Button("Jump")) {
-                    cpu_set_state(cpu, cpu_state_t::running);
-                    
-                    while (true) {
-                        if (cpu->state != ps1::cpu_state_t::running) break;
+                DEBUG_CODE(
+                    if (ImGui::Button("Jump")) {
+                        cpu_set_state(cpu, cpu_state_t::running);
                         
-                        ps1::cpu_tick(cpu);
+                        while (true) {
+                            if (cpu->state != ps1::cpu_state_t::running) break;
+                            
+                            ps1::cpu_tick(cpu);
+                        }
                     }
-                }
 
-                ImGui::SameLine();
+                    ImGui::SameLine();
+                );
 
                 if (ImGui::Button("Step")) {
                     cpu_tick(cpu);
