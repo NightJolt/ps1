@@ -9,11 +9,21 @@
 #include <set>
 // #include <cstdio>
 
+#if defined(PS1_WINDOWS)
 #include <glew/glew.h>
 #include <glfw/glfw3.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
+#elif defined(PS1_LINUX)
+#include <GL/glew.h>
+#include <GL/gl.h>
+#include <GLFW/glfw3.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+#endif
+
 
 #if defined(PS1_DEBUG)
     #include <iostream>

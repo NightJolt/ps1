@@ -70,7 +70,11 @@
 #endif
 
 // GLFW
+#if defined(PS1_WINDOWS)
 #include <glfw/glfw3.h>
+#else
+#include <GLFW/glfw3.h>
+#endif
 
 #ifdef _WIN32
 #undef APIENTRY

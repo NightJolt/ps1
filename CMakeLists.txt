@@ -22,11 +22,10 @@ else()
 	list(APPEND CPP_DEFINITIONS PS1_RELEASE)
 endif()
 
-add_subdirectory(libs)
-
-include_directories(core)
-
 if (PS1_WINDOWS)
+    add_subdirectory(libs)
+    include_directories(core)
+
     file (
         GLOB_RECURSE PROJECT_FILES
 
@@ -39,4 +38,20 @@ if (PS1_WINDOWS)
     add_executable(${PROJECT_NAME} ${PROJECT_FILES})
     target_link_libraries(${PROJECT_NAME} ps1_libs)
     target_compile_definitions(${PROJECT_NAME} PUBLIC ${CPP_DEFINITIONS})
+elseif (PS1_LINUX)
+    add_subdirectory(libs)
+    include_directories(core)
+
+    file (
+        GLOB_RECURSE PROJECT_FILES
+
+        main.cpp
+
+        core/*.h
+        core/*.cpp
+    )
+    add_executable(${PROJECT_NAME} ${PROJECT_FILES})
+    target_compile_definitions(${PROJECT_NAME} PUBLIC ${CPP_DEFINITIONS})
+    target_link_libraries(${PROJECT_NAME} ps1_libs)
+    target_link_libraries(${PROJECT_NAME} -lGL -lGLEW -lglfw)
 endif()

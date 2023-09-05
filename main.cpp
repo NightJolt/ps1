@@ -8,11 +8,11 @@
 
 int main() {
     ps1::render::init();
-    ps1::render::make_shader("../core/shaders/vertex.glsl", "../core/shaders/fragment.glsl", 0);
+    ps1::render::make_shader("./shaders/vertex.glsl", "./shaders/fragment.glsl", 0);
     ps1::render::use_shader(0);
 
     ps1::ps1_t console;
-    ps1::ps1_init(&console, "../bios/SCPH1001.bin");
+    ps1::ps1_init(&console, "./bios/SCPH1001.bin");
 
     ps1::emulation_settings_t settings;
     settings.instr_per_frame = 30000;

@@ -139,10 +139,10 @@ void ps1::logger::display() {
 
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    ImGui::TextWrapped(channels[channel_index].c_str());
+                    ImGui::TextWrapped("%s", channels[channel_index].c_str());
                     ImGui::TableNextColumn();
                     ImGui::PushStyleColor(ImGuiCol_Text, ::get_type_color(type));
-                    ImGui::TextWrapped(msg.c_str());
+                    ImGui::TextWrapped("%s", msg.c_str());
                     ImGui::PopStyleColor();
                 }
 
@@ -170,7 +170,7 @@ void ps1::logger::display() {
                         ImGui::TableNextColumn();
 
                         ImGui::PushStyleColor(ImGuiCol_Text, ::get_type_color(type));
-                        ImGui::TextWrapped(msg.c_str());
+                        ImGui::TextWrapped("%s", msg.c_str());
                         ImGui::PopStyleColor();
                     }
 
@@ -197,7 +197,7 @@ void ps1::logger::display() {
                         ImGui::TableNextColumn();
 
                         ImGui::PushStyleColor(ImGuiCol_Text, ::get_type_color(type_t::message));
-                        ImGui::TextWrapped(item->msg.c_str());
+                        ImGui::TextWrapped("%s", item->msg.c_str());
                         ImGui::PopStyleColor();
                     }
 

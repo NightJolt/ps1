@@ -505,7 +505,8 @@ namespace ps1 {
         ImGui::Begin("GPU");
 
             if (ImGui::TreeNode("GPUSTAT")) {
-                gpu_stat_t stat = (gpu_stat_t)gpu->stat.get();
+                uint32_t data = gpu->stat.get();
+                gpu_stat_t stat = *(gpu_stat_t*)&data;
 
                 ImGui::Text("texture page x base: %u", stat.texture_page_x_base);
                 ImGui::Text("texture page y base 1: %u", stat.texture_page_y_base);
