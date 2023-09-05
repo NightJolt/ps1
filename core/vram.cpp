@@ -9,7 +9,7 @@ namespace {
 
 namespace ps1 {
     void tsb_init(texture_stream_buffer_t* tsb) {
-        tsb->buffer = new float[vram_width * vram_height * 3];
+        tsb->buffer = new uint8_t[vram_width * vram_height * 3];
     }
 
     void tsb_exit(texture_stream_buffer_t* tsb) {
@@ -17,29 +17,42 @@ namespace ps1 {
     }
 }
 
-void ps1::vram_init(vram_t* vram) {
-    {
-        glGenFramebuffers(1, &vram->fbo);
-        glBindFramebuffer(GL_FRAMEBUFFER, vram->fbo);
+namespace {
+    void gen_texture(uint32_t* fbo, uint32_t* tbo, uint32_t* rbo, uint32_t width, uint32_t height) {
+        glGenFramebuffers(1, fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
 
-        glGenTextures(1, &vram->tbo);
-        glBindTexture(GL_TEXTURE_2D, vram->tbo);
+        glGenTextures(1, tbo);
+        glBindTexture(GL_TEXTURE_2D, *tbo);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, vram_width, vram_height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
         
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, vram->tbo, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *tbo, 0);
 
-        glGenRenderbuffers(1, &vram->rbo);
-        glBindRenderbuffer(GL_RENDERBUFFER, vram->rbo);
+        glGenRenderbuffers(1, rbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, *rbo);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, vram_width, vram_height);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, vram->rbo);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *rbo);
         
         glClearColor(.0f, .0f, .0f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    
+    void del_texture(uint32_t* fbo, uint32_t* tbo, uint32_t* rbo) {
+        glDeleteFramebuffers(1, fbo);
+        glDeleteTextures(1, tbo);
+        glDeleteRenderbuffers(1, rbo);
+    }
+}
+
+void ps1::vram_init(vram_t* vram) {
+    {
+        gen_texture(&vram->fbo, &vram->tbo, &vram->rbo, vram_width, vram_height);
     }
 
     {
@@ -57,9 +70,8 @@ void ps1::vram_init(vram_t* vram) {
 }
 
 void ps1::vram_exit(vram_t* vram) {
-    glDeleteFramebuffers(1, &vram->fbo);
-    glDeleteTextures(1, &vram->tbo);
-    glDeleteRenderbuffers(1, &vram->rbo);
+    del_texture(&vram->fbo, &vram->tbo, &vram->rbo);
+
     glDeleteBuffers(1, &vram->vbo);
 
     tsb_exit(&vram->texture_stream_buffer);
@@ -97,7 +109,7 @@ void ps1::vram_set_texture_stream_specs(vram_t* vram, uint32_t xpos, uint32_t yp
     vram->texture_stream_buffer.ypos = ypos;
     vram->texture_stream_buffer.width = width;
     vram->texture_stream_buffer.height = height;
-    vram->texture_stream_buffer.texels_left = width * height;
+    vram->texture_stream_buffer.texels_left = width * height + ((width * height) & 0x1);
     vram->texture_stream_buffer.index = 0;
 }
 
@@ -112,13 +124,21 @@ void ps1::vram_send_texture_stream_data(vram_t* vram, uint32_t data) {
     stream_rgb_t* rgb_0 = (stream_rgb_t*)(((uint16_t*)&data) + 1);
     stream_rgb_t* rgb_1 = (stream_rgb_t*)((uint16_t*)&data);
 
-    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = float(rgb_1->r) / 31.f;
-    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = float(rgb_1->g) / 31.f;
-    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = float(rgb_1->b) / 31.f;
+    uint8_t r1 = float(rgb_1->r) / 31.f * 255.f;
+    uint8_t g1 = float(rgb_1->g) / 31.f * 255.f;
+    uint8_t b1 = float(rgb_1->b) / 31.f * 255.f;
 
-    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = float(rgb_0->r) / 31.f;
-    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = float(rgb_0->g) / 31.f;
-    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = float(rgb_0->b) / 31.f;
+    uint8_t r0 = float(rgb_0->r) / 31.f * 255.f;
+    uint8_t g0 = float(rgb_0->g) / 31.f * 255.f;
+    uint8_t b0 = float(rgb_0->b) / 31.f * 255.f;
+    
+    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = r1;
+    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = g1;
+    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = b1;
+
+    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = r0;
+    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = g0;
+    vram->texture_stream_buffer.buffer[vram->texture_stream_buffer.index++] = b0;
 
     vram->texture_stream_buffer.texels_left -= 2;
 
@@ -128,7 +148,7 @@ void ps1::vram_send_texture_stream_data(vram_t* vram, uint32_t data) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, vram->texture_stream_buffer.xpos, vram->texture_stream_buffer.ypos, vram->texture_stream_buffer.width, vram->texture_stream_buffer.height, GL_RGB, GL_FLOAT, vram->texture_stream_buffer.buffer);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, vram->texture_stream_buffer.xpos, vram->texture_stream_buffer.ypos, vram->texture_stream_buffer.width, vram->texture_stream_buffer.height, GL_RGB, GL_UNSIGNED_BYTE, vram->texture_stream_buffer.buffer);
 
         logger::push("rendered texture stream", logger::type_t::message, "vram");
 

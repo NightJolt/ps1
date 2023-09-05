@@ -63,7 +63,7 @@ namespace ps1 {
         rgb_t color = gpu->gp0_cmd_buffer.buffer[0];
         uint32_t clut = gpu->gp0_cmd_buffer.buffer[2] >> 16;
         gpu_stat_t stat;
-        stat.raw = gpu->gp0_cmd_buffer.buffer[4] >> 16;
+        stat.raw = gpu->gp0_cmd_buffer.buffer[4] >> 16; // * 0-8, 11
 
         uint32_t clut_x = (clut & 0x3f) << 4;
         uint32_t clut_y = (clut >> 6) & 0x1ff;
@@ -165,21 +165,37 @@ namespace ps1 {
     }
 
     void gp0_load_texture(gpu_t* gpu) {
-        uint32_t resolution = gpu->gp0_cmd_buffer.buffer[2];
-        uint32_t width = resolution & 0xffff;
-        uint32_t height = resolution >> 16;
+        uint32_t xpos = gpu->gp0_cmd_buffer.buffer[1] & 0xffff;
+        uint32_t ypos = gpu->gp0_cmd_buffer.buffer[1] >> 16;
+
+        uint32_t xoff = gpu->stat.texture_page_x_base * 64;
+        uint32_t yoff = gpu->stat.texture_page_y_base * 256;
+
+        uint32_t width = gpu->gp0_cmd_buffer.buffer[2] & 0xffff;
+        uint32_t height = gpu->gp0_cmd_buffer.buffer[2] >> 16;
         uint32_t texture_size = width * height;
 
         texture_size += texture_size & 0x1; // * round up to be even
-
-        uint32_t xpos = gpu->gp0_cmd_buffer.buffer[1] & 0x3fe; // * 2 LSB ignored to align with pixels
-        uint32_t ypos = (gpu->gp0_cmd_buffer.buffer[1] >> 10) & 0x1ff;
         
         gpu->gp0_fn_info.args_left = texture_size >> 1;
         gpu->gp0_data_mode = gp0_data_mode_t::texture;
 
-        uint32_t xoff = gpu->stat.texture_page_x_base * 64;
-        uint32_t yoff = gpu->stat.texture_page_y_base * 256;
+        // uint32_t xpos = gpu->gp0_cmd_buffer.buffer[1] & 0x3ff;
+        // uint32_t ypos = (gpu->gp0_cmd_buffer.buffer[1] >> 16) & 0x1ff;
+
+        // uint32_t xoff = gpu->stat.texture_page_x_base * 64;
+        // uint32_t yoff = gpu->stat.texture_page_y_base * 256;
+
+        // uint32_t width = gpu->gp0_cmd_buffer.buffer[2] & 0xffff;
+        // uint32_t height = gpu->gp0_cmd_buffer.buffer[2] >> 16;
+
+        // width = ((width - 1) & 0x3ff) + 1;
+        // height = ((height - 1) & 0x1ff) + 1;
+
+        // uint32_t texture_size = ((width * height) + 1) & 0xfffffffe;
+        
+        // gpu->gp0_fn_info.args_left = texture_size >> 1;
+        // gpu->gp0_data_mode = gp0_data_mode_t::texture;
 
         vram_set_texture_stream_specs(gpu->vram, xpos + xoff, ypos + yoff, width, height);
     }

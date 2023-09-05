@@ -4,7 +4,7 @@
 
 namespace ps1 {
     struct texture_stream_buffer_t {
-        float* buffer;
+        uint8_t* buffer;
         uint32_t index;
         uint32_t texels_left;
         uint32_t xpos;
@@ -17,6 +17,7 @@ namespace ps1 {
         uint32_t fbo; // * frame buffer object
         uint32_t tbo; // * texture buffer object. used for rendering final result
         uint32_t rbo; // * render buffer object
+
         uint32_t vbo; // * vertex buffer object. used for drawing triangles
 
         texture_stream_buffer_t texture_stream_buffer; // * used for streaming texture data from cpu to gpu
@@ -45,11 +46,10 @@ namespace ps1 {
     };
 
     struct text_coord_t {
-        text_coord_t(uint32_t v) : x(v), y(v >> 16) {}
-        text_coord_t(float x, float y) : x(x), y(y) {}
+        text_coord_t(uint32_t v) : x(v), y(v >> 8) {}
 
-        uint16_t x;
-        uint16_t y;
+        uint8_t x;
+        uint8_t y;
     };
 
     struct vertex_t {
